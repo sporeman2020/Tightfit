@@ -1415,7 +1415,7 @@ Rack: middle</pre>` },
   const toolBtns = [...document.querySelectorAll(".tools button")];
   const paintCanvas = document.getElementById("paintCanvas");
   const pctx = paintCanvas.getContext("2d");
-  const CELL = 8, IDLE_MS = 2 * 60 * 1000, REPLAY_SPEEDUP = 2; // eraser starts after 2 minutes idle and works twice as fast as you drew
+  const CELL = 8, IDLE_MS = 90 * 1000, REPLAY_SPEEDUP = 2; // eraser starts after 90 seconds idle and works twice as fast as you drew
   const cells = new Map();   // "x,y" -> color, the source of truth for what is on the canvas
   let drawLog = [];          // { cx, cy, t } in the order pixels were painted
   let stroking = false, strokeMode = null, strokeColor = "#800000", lastCell = null, lastT = 0;
