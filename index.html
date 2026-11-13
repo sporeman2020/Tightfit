@@ -3,6 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+// Phones only (a touch screen whose short side is under 600px): lay the whole desktop out at 1100px wide and let
+// the browser scale it down to fit. iPads and computers keep the normal viewport.
+(function () {
+  try {
+    var phone = window.matchMedia("(pointer: coarse)").matches && Math.min(screen.width, screen.height) < 600;
+    if (phone) document.querySelector('meta[name="viewport"]').setAttribute("content", "width=1100, user-scalable=no");
+  } catch (e) {}
+})();
+</script>
 <link rel="icon" type="image/png" href="favicon.png">
 <title>Bake Desktop</title>
 <style>
@@ -806,7 +816,7 @@ Rack: middle</pre>` },
     "images/photos/cakes.jpg", "images/photos/capy.jpg", "images/photos/pov.jpg", "images/photos/photo-04.jpg", "images/photos/photo-05.jpg", "images/photos/photo-06.jpg", "images/photos/photo-07.jpg", "images/photos/MAYA.jpg", "images/photos/photo-09.jpg", "images/photos/photo-10.jpg", "images/photos/Bella.jpg", "images/photos/Big%20Dogg.jpg", "images/photos/AFFIE.JPG", "images/photos/OLD_HEAD.jpg", "images/photos/photo-16.jpg",
     "images/photos/RAGE.jpg", "images/photos/cherry.jpg", "images/photos/photo-26.jpg",
     "images/photos/gif-1.gif", "images/photos/gif-2.gif", "images/photos/gif-3.gif", "images/photos/gif-4.gif",
-    "images/photos/upload-01.jpg", "images/photos/upload-02.jpg", "images/photos/upload-03.jpg", "images/photos/upload-04.jpg", "images/photos/upload-05.jpg", "images/photos/upload-06.jpg", "images/photos/upload-07.jpg", "images/photos/upload-08.jpg", "images/photos/upload-09.jpg", "images/photos/upload-10.jpg", "images/photos/upload-11.jpg", "images/photos/upload-12.jpg", "images/photos/upload-13.jpg", "images/photos/Capybara.jpg"
+    "images/photos/upload-01.jpg", "images/photos/upload-02.jpg", "images/photos/upload-03.jpg", "images/photos/upload-04.jpg", "images/photos/upload-05.jpg", "images/photos/upload-06.jpg", "images/photos/upload-07.jpg", "images/photos/upload-08.jpg", "images/photos/upload-09.jpg", "images/photos/upload-10.jpg", "images/photos/upload-11.jpg", "images/photos/upload-12.jpg", "images/photos/upload-13.jpg", "images/photos/upload-14.jpg", "images/photos/upload-15.jpg", "images/photos/upload-16.jpg", "images/photos/upload-17.jpg", "images/photos/upload-18.jpg", "images/photos/upload-19.jpg", "images/photos/upload-20.jpg", "images/photos/upload-21.jpg", "images/photos/upload-22.jpg", "images/photos/upload-23.jpg", "images/photos/upload-24.jpg", "images/photos/upload-25.jpg", "images/photos/upload-26.jpg", "images/photos/upload-27.jpg", "images/photos/Capybara.jpg"
   ];
   function scatterPhotos() {
     const W = desk.clientWidth || 1200, H = desk.clientHeight || 700;
