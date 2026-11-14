@@ -2088,6 +2088,32 @@ Rack: middle</pre>` },
     if (taps.length >= 5) { taps = []; start(); }
   });
 })();
+</script>
+<script>
+// Secret: type "credits" and a Credits window opens with the Soilguessr logo and the names.
+(function () {
+  var buf = "", open = null;
+  function close() { if (open) { open.remove(); open = null; } }
+  function show() {
+    close();
+    var d = document.createElement("div"); d.className = "note credits-dialog";
+    d.style.cssText = "position:fixed;left:50%;top:30%;width:320px;margin-left:-160px;z-index:4000;cursor:default;";
+    d.innerHTML = '<div class="note-title"><span>Credits</span><span></span></div>' +
+      '<div class="note-body" style="text-align:center;">' +
+      '<img src="images/soilguessr-logo.svg" alt="Soilguessr" style="display:block;width:100%;height:auto;margin:6px 0 12px;">' +
+      '<div>Sean Young</div><div>Mike Ze Dong</div></div>' +
+      '<div class="row"><button type="button" class="note-ok" data-a="close">OK</button></div>';
+    document.body.appendChild(d);
+    d.addEventListener("click", function (e) { if (e.target.closest("button")) close(); });
+    open = d;
+  }
+  window.addEventListener("keydown", function (e) {
+    if (e.ctrlKey || e.metaKey || e.altKey || !e.key || e.key.length !== 1) return;
+    buf = (buf + e.key.toLowerCase()).slice(-7);
+    if (buf === "credits") { buf = ""; show(); }
+  });
+  window.addEventListener("keydown", function (e) { if (open && e.key === "Escape") close(); });
+})();
 </script></body>
 </html>
 
