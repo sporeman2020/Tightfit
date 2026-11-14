@@ -2022,7 +2022,18 @@ Rack: middle</pre>` },
   function keyName(e) { return e.key.length === 1 ? e.key.toLowerCase() : e.key; }
   window.addEventListener("keydown", function (e) { if (ended) return; var k = keyName(e); if (k === "ArrowUp" || k === "ArrowDown" || k === "ArrowLeft" || k === "ArrowRight" || k === "w" || k === "a" || k === "s" || k === "d") { keysDown[k] = true; e.preventDefault(); } });
   window.addEventListener("keyup", function (e) { delete keysDown[keyName(e)]; });
-  var pst = { on: false, final: false, x: 0, z: 22, last: null, hold: 0 }, lightsOff = false;
+  // on a phone, holding a finger near the bottom of the screen counts as holding S
+  function touchSouth(e) {
+    if (ended) return;
+    var low = false;
+    for (var i = 0; i < e.touches.length; i++) if (e.touches[i].clientY > window.innerHeight * 0.72) low = true;
+    if (low) keysDown.s = true; else delete keysDown.s;
+  }
+  window.addEventListener("touchstart", touchSouth, { passive: true });
+  window.addEventListener("touchmove", touchSouth, { passive: true });
+  window.addEventListener("touchend", touchSouth, { passive: true });
+  window.addEventListener("touchcancel", touchSouth, { passive: true });
+  var pst = { on: false, final: false, x: 0, z: 22, last: null, hold: 0, hedWorld: new THREE.Vector3(0, 60, -410) }, lightsOff = false;
   var ditherTex = (function () {                                                                         // a 4x4 Bayer matrix, used as an alpha map so surfaces read as dithered
     var bayer = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5], c = document.createElement("canvas"); c.width = c.height = 4;
     var x = c.getContext("2d"), im = x.createImageData(4, 4);
@@ -2045,23 +2056,37 @@ Rack: middle</pre>` },
   wrap.appendChild(boardEl);
   var boardText = "";
   function setBoard(text) { if (text === boardText) return; boardText = text; boardEl.textContent = text; boardEl.style.opacity = text ? "1" : "0"; }
+  var kal = { on: false, done: false, t: 0, next: 2, glitches: 0, glitchFrames: 0, camPos: null };
+  function kaleidoStep(dt) {                                                                           // rotate, sink, kaleidoscope; then glitch back a few frames, three times
+    kal.t += dt;
+    var d = Math.min(1, kal.t / 5), rot = kal.t * 240, jx = 0, jy = 0;
+    if (kal.glitchFrames > 0) { kal.glitchFrames--; jx = (Math.random() - 0.5) * 60; jy = (Math.random() - 0.5) * 20; }
+    wrap.style.transform = "translate(" + jx.toFixed(1) + "px," + (d * 100 + jy).toFixed(1) + "vh) rotate(" + rot.toFixed(1) + "deg) scale(" + (1 + 0.6 * d).toFixed(3) + ")";
+    wrap.style.filter = "hue-rotate(" + (kal.t * 220).toFixed(0) + "deg) saturate(1.8)";
+    if (kal.glitches < 3 && kal.t > kal.next && kal.t > 2) {
+      kal.glitches++; kal.t -= 0.0167 * (2 + Math.floor(Math.random() * 4)); kal.glitchFrames = 3; kal.next = kal.t + 0.9;
+    }
+    if (kal.t > 5.6) { kal.done = true; kal.on = false; wrap.style.transform = ""; wrap.style.filter = ""; pst.final = true; lightsOff = true; person.visible = false; setBoard("BOARD: Fear/Allowance/Grip"); }
+  }
   function updatePlayer(T) {
     if (ended) return;
     var dt = pst.last === null ? 0 : Math.min(0.1, T - pst.last); pst.last = T;
     var vp = sm((T - 45) / 90);
     if (!pst.final && T > 45) { voidSphere.visible = true; voidSphere.position.copy(hed.position); voidSphere.scale.setScalar(Math.max(0.001, 470 * vp)); setBoard("BOARD: Intrusion/Invasion/Invalid Occupant"); }
+    if (kal.on) { kaleidoStep(dt); cam.position.copy(kal.camPos); cam.lookAt(pst.hedWorld); voidSphere.visible = false; return; }
     if (pst.final) { voidSphere.visible = false; cam.position.set(0, 6, 30); cam.lookAt(hed.position); return; }
     if (T < 14) return;
-    if (!pst.on) { pst.on = true; person.visible = true; pst.x = 0; pst.z = 22; }
+    if (!pst.on) { pst.on = true; person.visible = true; pst.x = 0; pst.z = 22; pst.hedWorld.copy(hed.position); }
     var fwd = (keysDown.ArrowUp || keysDown.w) ? -1 : 0, back = (keysDown.ArrowDown || keysDown.s) ? 1 : 0;
     var side = (keysDown.ArrowRight || keysDown.d) ? 1 : ((keysDown.ArrowLeft || keysDown.a) ? -1 : 0);
     var holdingS = back === 1;
     pst.hold = holdingS ? pst.hold + dt : 0;
     var dx = side * 3.2 * dt, dz = (fwd + back) * 3.2 * dt;
-    if (!holdingS) { var px = hed.position.x - pst.x, pz = hed.position.z - pst.z, pl = Math.hypot(px, pz) || 1; dx += px / pl * 0.9 * dt; dz += pz / pl * 0.9 * dt; }   // drifts into the eye unless you push south
+    if (!holdingS) { var px = pst.hedWorld.x - pst.x, pz = pst.hedWorld.z - pst.z, pl = Math.hypot(px, pz) || 1; dx += px / pl * 2.2 * dt; dz += pz / pl * 2.2 * dt; }   // drifts toward the eye unless you push south
     pst.x += dx; pst.z += dz;
     person.position.set(pst.x, 0, pst.z);
     cam.position.set(pst.x, 2.6, pst.z + 4.2); cam.lookAt(pst.x, 1.3, pst.z);
+    if (!holdingS && !kal.done && cam.position.distanceTo(pst.hedWorld) < 30) { kal.on = true; kal.t = 0; kal.next = 2; kal.glitches = 0; kal.glitchFrames = 0; kal.camPos = cam.position.clone(); }   // through the eye
     if (pst.hold >= 210) { pst.final = true; lightsOff = true; person.visible = false; voidSphere.visible = false; setBoard("BOARD: Fear/Allowance/Grip"); }
   }  function draw(T) {
       var s1 = sm((T - 0.6) / 6.0), L = sm((T - 2.0) / 3.5), Z = sm((T - 8.0) / 6.0);
@@ -2079,7 +2104,7 @@ Rack: middle</pre>` },
       ground.material.color.setRGB((1 - 0.06 * L) * (1 - 0.88 * off) * cG[0], (1 - 0.2 * L) * (1 - 0.88 * off) * cG[1], (1 - 0.1 * L) * (1 - 0.88 * off) * cG[2]);
       sc.fog.near = 400 - 360 * L; sc.fog.far = 700 - 200 * L;
       dome.material.uniforms.uAmt.value = L; dome.material.uniforms.uOff.value = off; dome.material.uniforms.uSun.value = -0.05 + 0.19 * L; dome.position.copy(cam.position);
-      var slope = -0.05 + 0.19 * L, hs = sm((T - 2.2) / 2.0); hed.position.set(0, cam.position.y + slope * 440, cam.position.z - 440); { var hsz = Math.max(0.001, 50 * hs); hed.scale.setScalar(hsz); } spinHed(T, hs);
+      var slope = -0.05 + 0.19 * L, hs = sm((T - 2.2) / 2.0); hed.position.set(0, cam.position.y + slope * 440, cam.position.z - 440); if (pst.on && !pst.final) hed.position.copy(pst.hedWorld); { var hsz = Math.max(0.001, 50 * hs); hed.scale.setScalar(hsz); } spinHed(T, hs);
       sc.fog.color.setRGB(cH[0] * 0.95 * (1 - off), cH[1] * (1 - 0.2 * L) * (1 - off), cH[2] * (1 - 0.05 * L) * (1 - off));
       var v = new THREE.Vector3(0, cam.position.y, cam.position.z - 3000).project(cam), vx = 50, vy = 50;
       if (s1 > 0.5 && isFinite(v.x) && v.z < 1) { vx = (v.x * 0.5 + 0.5) * 100; vy = (1 - (v.y * 0.5 + 0.5)) * 100; }
