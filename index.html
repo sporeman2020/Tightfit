@@ -1,3 +1,4 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <!doctype html>
 <html lang="en">
 <head>
@@ -13,6 +14,7 @@
   } catch (e) {}
 })();
 </script>
+
 <link rel="icon" type="image/png" href="favicon.png">
 <title>Bake Desktop</title>
 <style>
@@ -111,7 +113,23 @@
   .panel svg { display: block; width: 100%; height: 120px; margin-bottom: 6px; }
   .panel pre { margin: 0; white-space: pre-wrap; font: 12px/1.5 "Courier New", monospace; }
 
-  .note.pop { animation: notePop 1s ease-out forwards; }
+  /* Secret: Sunrise. Every window vanishes at once, a prompt asks about a sunrise, and OK plays a dithered one. */
+  @keyframes sunriseOut { to { opacity: 0; transform: scale(0.8); } }
+  @keyframes sunriseIn { from { opacity: 0; transform: scale(0.8); } to { opacity: 1; } }
+  .sunrise-gone { animation: sunriseOut 0.32s ease-in var(--sd, 0s) forwards !important; pointer-events: none !important; }
+  .sunrise-back { animation: sunriseIn 0.45s ease-out var(--sd, 0s) backwards !important; }
+  .sunrise-dialog { position: fixed; left: 50%; top: 36%; width: 300px; margin-left: -150px; z-index: 4000; cursor: default; animation: sunriseDlg 0.35s ease-out; }
+  @keyframes sunriseDlg { from { opacity: 0; transform: scale(0.85); } to { opacity: 1; transform: scale(1); } }
+  .sunrise-dialog .note-body { padding: 22px 16px 14px; font-size: 15px; }
+  .sunrise-dialog .row { display: flex; gap: 14px; justify-content: center; padding: 0 14px; }
+  .sunrise-dialog .note-ok { margin: 0; min-width: 84px; }
+  #sunriseWrap { position: fixed; left: 0; top: 0; width: 100%; height: calc(100% - 30px); z-index: 3900; overflow: hidden; opacity: 0; transition: opacity 0.9s ease; }
+  #sunriseWrap canvas { display: block; width: 100%; height: 100%; }
+  #sunriseNoise { position: absolute; inset: 0; pointer-events: none; z-index: 1; mix-blend-mode: overlay; opacity: 0.55; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>"); background-size: 200px 200px; }
+  #sunriseLyric { position: absolute; left: 0; right: 0; text-align: center; pointer-events: none; padding: 0 5%; color: #800000; font: 14px 'MGPixel', 'MS Sans Serif', sans-serif; text-shadow: 0 0 3px rgba(247,238,240,0.95), 0 0 12px rgba(247,238,240,0.7); }
+  #sunriseLyric p { position: absolute; left: 50%; top: 0; width: 66%; margin: 0 0 0 -33%; opacity: 0; letter-spacing: 0.14em; font-size: clamp(13px, 1.7vw, 26px); line-height: 1.5; }
+  #sunriseLyric p.big { font-size: clamp(24px, 3.6vw, 60px); letter-spacing: 0.34em; }
+  #sunriseGrain { position: absolute; inset: 0; pointer-events: none; mix-blend-mode: multiply; opacity: 0.95; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix type='saturate' values='0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>"); -webkit-mask-image: radial-gradient(circle at var(--gx, 50%) var(--gy, 40%), #000 var(--g1, 0px), rgba(0,0,0,0) var(--g2, 0px)); mask-image: radial-gradient(circle at var(--gx, 50%) var(--gy, 40%), #000 var(--g1, 0px), rgba(0,0,0,0) var(--g2, 0px)); }  .note.pop { animation: notePop 1s ease-out forwards; }
   .note.out { animation: noteOut 0.8s ease-in forwards; }
   .win.out { animation: noteOut 0.8s ease-in forwards; }
   @keyframes notePop {
@@ -669,7 +687,7 @@ Rack: middle</pre>` },
   });
 
   // "+ Window" adds a random picture or GIF. Only PHOTO_CAP of these stay open; the oldest closes past that.
-  const PHOTO_CAP = 40;
+  const PHOTO_CAP = 70;
   let addedPhotos = [];
   // Recipe text window, counted toward the same cap.
   function spawnRecipeText() {
@@ -1101,9 +1119,9 @@ Rack: middle</pre>` },
       n.classList.add("out");
       n.addEventListener("animationend", () => n.remove());
     }
-    if (live.length < 8) spawnNote();
-    if (Math.random() < 0.4) spawnTrick();
-    setTimeout(cycleNotes, 6000 + Math.random() * 9000);
+    if (live.length < 14 && !window.tightfitSunriseOn) spawnNote();
+    if (Math.random() < 0.4 && !window.tightfitSunriseOn) spawnTrick();
+    setTimeout(cycleNotes, 2500 + Math.random() * 4500);
   }
   cycleNotes();
 
@@ -1142,13 +1160,14 @@ Rack: middle</pre>` },
     // Only adds recipe windows, up to 14; nothing is closed automatically.
     // New windows favour images: 3 in 4 are a photo or GIF, the rest a recipe.
     const total = desk.querySelectorAll(".win:not(.player):not(.jam-win)").length;
-    if (total < 40) {
+    if (total < 70 && !window.tightfitSunriseOn) {
       if (Math.random() < 0.85 || count >= 6) spawnPhoto(true);
       else spawnMethod();
     }
-    setTimeout(randomMethodTick, 2000 + Math.random() * 4000);
+    setTimeout(randomMethodTick, 700 + Math.random() * 1500);
   }
-  setTimeout(randomMethodTick, 2400);
+  setTimeout(randomMethodTick, 1200);
+  for (let i = 0; i < 9; i++) setTimeout(() => spawnPhoto(true), 500 + i * 300);          // a quick burst of windows so the desk is busy from the start
 
   // A decorative second cursor: it enters from off the page, presses the X on a desk window, and leaves.
   function makeGhost() {
@@ -1205,7 +1224,24 @@ Rack: middle</pre>` },
     document.body.appendChild(n);
     setTimeout(() => { n.style.opacity = "0"; setTimeout(() => n.remove(), 400); }, 4000);
   }
-  function ghostPausePlayer() {
+  // Secret: type "shots" and a notice that says "Second Page" comes up in the lower left, in the same style as the music one.
+  function showSecondPage() {
+    const n = document.createElement("div");
+    n.textContent = "Second Page";
+    n.style.cssText = "position:fixed;left:16px;bottom:44px;z-index:2100;background:#d9c3a0;color:#2a0808;border:2px solid #2a0808;box-shadow:0 0 0 2px #ede1e3,0 0 0 4px #2a0808;padding:10px 14px;font:14px 'MGPixel','MS Sans Serif',sans-serif;transition:opacity 0.4s;";
+    document.body.appendChild(n);
+    setTimeout(() => { n.style.opacity = "0"; setTimeout(() => n.remove(), 400); }, 4000);
+  }
+  window.showSecondPage = showSecondPage;
+  (function () {
+    let buf = "";
+    window.addEventListener("keydown", e => {
+      if (e.ctrlKey || e.metaKey || e.altKey || e.key.length !== 1) return;
+      const tg = e.target; if (tg && (tg.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(tg.tagName))) return;
+      buf = (buf + e.key.toLowerCase()).slice(-5);
+      if (buf === "shots") { buf = ""; showSecondPage(); }
+    });
+  })();  function ghostPausePlayer() {
     if (playBtn.getAttribute("aria-label") !== "Pause") return;
     const g = makeGhost();
     g.style.zIndex = "2000";
@@ -1315,8 +1351,11 @@ Rack: middle</pre>` },
     }
   }  let swarmTimer = null, fadeTimer = null, dogLeaving = false;
   const inFullscreen = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+  window.tightfitMayaActive = () => window.tightfitSunriseOn || dogEl.classList.contains("go") || dogLeaving || !!document.querySelector(".maya-win");   // the blob crowd stays away while Big Dog and the Maya windows are out
   function dogSlide() {
     if (inFullscreen()) return;          // Big Dog and the Maya swarm never play in full screen
+    if (window.tightfitSunriseOn) return;
+    if (window.tightfitCrowdActive && window.tightfitCrowdActive()) return;   // ...and never while the Smoovement blobs are out
     dogLeaving = false;
     clearTimeout(swarmTimer);
     clearTimeout(fadeTimer);
@@ -1326,7 +1365,7 @@ Rack: middle</pre>` },
     bubble.textContent = DOG_MESSAGE;
     const vw = window.innerWidth, vh = window.innerHeight;
     const r = videoWin.getBoundingClientRect();
-    const x60 = (videoWin.hidden || r.width === 0) ? vw * DOG_REACH : r.left + r.width * DOG_REACH; // how far across Tightfit she reaches
+    const x60 = (videoWin.hidden || r.width === 0) ? vw * DOG_REACH : r.left + r.width * (vw > 1000 ? 0.58 : DOG_REACH); // how far across Tightfit she reaches (a little less on a wide PC screen, so she is zoomed out a bit)
     // Real photo pixels only (never stretched): zoom in until the picture reaches from the snout stop point
     // all the way to the left screen edge.
     const s = Math.max(vh * 0.86 / SPR_H, (x60 + 24) / SNOUT_X);
@@ -1410,7 +1449,7 @@ Rack: middle</pre>` },
       const dx = e.clientX - sx, dy = e.clientY - sy;
       if (dx < -60 && Math.abs(dx) > Math.abs(dy)) { sx = null; dogDismiss(); }
     });
-    const end = () => { sx = null; };
+    const end = e => { if (e && sx !== null && Math.hypot(e.clientX - sx, e.clientY - sy) < 10) { sx = null; dogDismiss(); return; } sx = null; };   // a plain click on her sends her away too
     img.addEventListener("pointerup", end);
     img.addEventListener("pointercancel", end);
   })();
@@ -1421,6 +1460,7 @@ Rack: middle</pre>` },
     if (document.fullscreenElement || document.webkitFullscreenElement) { notFullscreenSecs = 0; return; }
     if (dogEl.classList.contains("go")) return;
     if (++notFullscreenSecs >= dogThreshold) {
+      if (window.tightfitCrowdActive && window.tightfitCrowdActive()) { notFullscreenSecs = dogThreshold; return; }   // wait until the blobs have gone
       dogSlide();
       notFullscreenSecs = 0;
       dogThreshold = 180 + Math.random() * 120;
@@ -1638,7 +1678,7 @@ Rack: middle</pre>` },
       if (!grabFadeEl) return;
       const bs = crashEl = buildCrash();
       for (const [on, ms] of [[0, 120], [1, 50], [0, 90], [1, 70], [0, 60], [1, 140], [0, 50], [1, 260], [0, 40], [1, 1]]) { bs.style.opacity = on; await wait(ms); }   // flickers on like a failing bulb
-      await wait(1700);
+      await wait(5500);
       if (!crashEl) return;
       bs.classList.add("morph"); await wait(1600);                                                                                // its style turns into the page's
       if (!crashEl) return;
@@ -1741,5 +1781,314 @@ Rack: middle</pre>` },
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 <script src="blob-data.js"></script>
 <script src="blob-run.js"></script>
-</body>
+<script>
+/* Secret action: type "sunrise" (or tap the clock five times). All windows disappear en masse and a prompt asks
+   "Do you want to see a Sunrise?". OK plays a dithered sunrise; Cancel brings everything back. */
+(function () {
+  var on = false, hidden = [], BAYER = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
+  var SEL = ".win, .note, .tools, .swatches, .task, #dogSlide, .overflow-menu";
+  function hideAll() {
+    hidden = Array.prototype.slice.call(document.querySelectorAll(SEL));
+    hidden.forEach(function (el) { el.style.setProperty("--sd", (Math.random() * 0.5).toFixed(2) + "s"); el.classList.add("sunrise-gone"); });
+  }
+  function showAll() {
+    hidden.forEach(function (el) {
+      el.style.setProperty("--sd", (Math.random() * 0.45).toFixed(2) + "s");
+      el.classList.remove("sunrise-gone"); el.classList.add("sunrise-back");
+    });
+    var list = hidden; hidden = [];
+    setTimeout(function () { list.forEach(function (el) { el.classList.remove("sunrise-back"); el.style.removeProperty("--sd"); }); on = false; window.tightfitSunriseOn = false; }, 1100);
+  }
+  function dialog() {
+    var d = document.createElement("div"); d.className = "note sunrise-dialog";
+    d.innerHTML = '<div class="note-title"><span>Sunrise</span><span></span></div><div class="note-body">Do you want to see a Sunrise?</div><div class="row"><button type="button" class="note-ok" data-a="ok">OK</button><button type="button" class="note-ok" data-a="cancel">Cancel</button></div>';
+    document.body.appendChild(d);
+    var done = false;
+    function finish(ok) { if (done) return; done = true; window.removeEventListener("keydown", key, true); d.remove(); if (ok) scene(); else showAll(); }
+    function key(e) { if (e.key === "Enter") { e.preventDefault(); finish(true); } else if (e.key === "Escape") { e.preventDefault(); finish(false); } }
+    d.addEventListener("click", function (e) { var b = e.target.closest("button"); if (b) finish(b.getAttribute("data-a") === "ok"); });
+    window.addEventListener("keydown", key, true);
+    d.querySelector('[data-a="ok"]').focus();
+  }
+  // The sunrise: the page's own lattice desk tilts back into a three-point perspective, towers rise out of the grid, sky light
+  // comes in, the picture is cropped in toward the vanishing point, and the sky settles into a foggy pink-to-light-blue gradient.
+  function scene() {
+    var VW = window.innerWidth, VH = window.innerHeight - 30, DUR = 16;
+    var fixedT = typeof window.__sunriseT === "number" ? window.__sunriseT : null;     // (a fixed moment, for checking)
+    var wrap = document.createElement("div"); wrap.id = "sunriseWrap"; var cv = document.createElement("canvas"); wrap.appendChild(cv); document.body.appendChild(wrap);
+    var grain = document.createElement("div"); grain.id = "sunriseGrain"; wrap.appendChild(grain);
+    var noise = document.createElement("div"); noise.id = "sunriseNoise"; wrap.appendChild(noise);        // film grain over the whole picture
+    var lyric = document.createElement("div"); lyric.id = "sunriseLyric"; wrap.appendChild(lyric);                        // three lines, set below the horizon once the hedron has appeared
+    var LY = ["I\u2019ve given up all chance at inner peace", "I made my mind a sunless place", "I share my dreams with ghosts",
+      "I wake up every day to an equation I wrote 15 years ago, from which there\u2019s only one conclusion", "I\u2019m damned for what I do",
+      "My anger, my ego, my unwillingness to yield, my eagerness to fight", "They\u2019ve set me on a path from which there is no escape",
+      "I yearned to be a savior against injustice without contemplating the cost and by the time I looked down, there was no longer any ground beneath my feet",
+      "What\u2019s my sacrifice?", "I\u2019m condemned to use the tools of my enemy to defeat them", "I burn my decency for someone else\u2019s future",
+      "I burn my life to make a sunrise that I know I\u2019ll never see", "And the ego that started this fight will never have a mirror, or an audience or the light of gratitude",
+      "So what do I sacrifice", "EVERYTHING"], lyStart = [], lyDur = [], lyCum = 4.8;
+    LY.forEach(function (ln, i) { var big = i === LY.length - 1, p = document.createElement("p"); p.textContent = ln; if (big) p.className = "big"; lyric.appendChild(p);
+      lyStart.push(lyCum); var du = big ? 10 : 3.4 + 0.055 * ln.length; lyDur.push(du); lyCum += du; });                       // one line at a time, each held long enough to read
+    var lyPeriod = lyCum - 4.8 + 25;                                                                                               // then a pause and round again        // the page's film grain, kept only around the hedron
+    var cs = getComputedStyle(document.documentElement), deskCss = (cs.getPropertyValue("--desk") || "#d9c3a0").trim(), latt = (cs.getPropertyValue("--lattice") || "128,0,0").trim();
+    var renderer = new THREE.WebGLRenderer({ canvas: cv, antialias: true }); renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2)); renderer.setSize(VW, VH, false);
+    var sc = new THREE.Scene(), cam = new THREE.PerspectiveCamera(35, VW / VH, 0.1, 1500); cam.rotation.order = "YXZ";
+    sc.fog = new THREE.Fog(0xf2c6d4, 400, 700);
+    // the ground is the page's lattice: 33px cells, 3px lines
+    var tc = document.createElement("canvas"); tc.width = tc.height = 264; var tx = tc.getContext("2d");
+    tx.fillStyle = deskCss; tx.fillRect(0, 0, 264, 264); tx.fillStyle = "rgba(" + latt + ",0.30)";
+    for (var k = 0; k < 4; k++) { tx.fillRect(k * 66 + 58, 0, 6, 264); tx.fillRect(0, k * 66 + 58, 264, 6); }
+    var tex = new THREE.CanvasTexture(tc); tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(1, 1); tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    // The ground is a sheet that can fold: flat down the middle avenue, then curling up at both sides and over the top, like Inception's folding city.
+    // Down the avenue a crack forms in it, hairline first, and then splits open; the lips of the cut lift, and the lattice smears and crumbles at them.
+    var FX0 = 30, FR = 60, FTH = 1.45, FP = FX0 + FR * FTH + 40, FN = 300, ZR = 180, GZ0 = 80, GZ1 = -640;
+    var PAL = [{ p: [1.0, 0.36, 0.68], b: [0.16, 0.52, 1.0], h: [1.0, 0.6, 0.82], g: [1.0, 1.0, 1.0] },          // pink and blue
+               { p: [1.0, 0.62, 0.2], b: [0.08, 0.72, 0.66], h: [1.0, 0.78, 0.45], g: [1.0, 0.92, 0.62] },       // amber and teal
+               { p: [0.66, 0.3, 1.0], b: [1.0, 0.3, 0.56], h: [0.8, 0.55, 1.0], g: [0.84, 0.74, 1.0] },          // violet and rose
+               { p: [0.28, 0.9, 0.52], b: [0.1, 0.5, 1.0], h: [0.6, 1.0, 0.8], g: [0.74, 1.0, 0.84] },           // green and sea blue
+               { p: [1.0, 0.2, 0.22], b: [0.5, 0.1, 0.62], h: [1.0, 0.5, 0.4], g: [1.0, 0.74, 0.7] }];          // red and plum
+    function palAt(pp, key, out) { var n0 = PAL.length, i0 = ((Math.floor(pp) % n0) + n0) % n0, i1 = (i0 + 1) % n0, f = pp - Math.floor(pp);
+      for (var c = 0; c < 3; c++) out[c] = PAL[i0][key][c] + (PAL[i1][key][c] - PAL[i0][key][c]) * f; return out; }
+    var cP = [0, 0, 0], cB = [0, 0, 0], cH = [0, 0, 0], cG = [0, 0, 0];    var patP = 0;                                                                                   // how far the pattern has developed: it takes another step every couple of minutes
+    function surf(p, thMax, z) { thMax *= Math.max(0.05, 0.55 + 0.45 * Math.cos(z * 2 * Math.PI / 64) + Math.min(patP, 5) * 0.15 * Math.cos(z * 2 * Math.PI / 23 + 1.3) + Math.max(0, Math.min(patP, 5) - 2) * 0.1 * Math.cos(z * 2 * Math.PI / 11 + 0.4));                                                                       // where a point p (distance across the sheet) ends up, and how far it has turned
+      var sg = p < 0 ? -1 : 1, s = Math.abs(p) - FX0; if (s <= 0) return { x: p, y: 0, b: 0 };
+      var sc0 = FR * thMax, ax, ay, th;
+      if (s <= sc0) { th = s / FR; ax = FX0 + FR * Math.sin(th); ay = FR * (1 - Math.cos(th)); }
+      else { th = thMax; ax = FX0 + FR * Math.sin(th) + (s - sc0) * Math.cos(th); ay = FR * (1 - Math.cos(th)) + (s - sc0) * Math.sin(th); }
+      return { x: sg * ax, y: ay, b: sg * th };
+    }
+    var gGeo = new THREE.BufferGeometry(), gPos = new Float32Array((FN + 1) * (ZR + 1) * 3), gUv = new Float32Array((FN + 1) * (ZR + 1) * 2), gIdx = [], gi, gr;
+    for (gr = 0; gr <= ZR; gr++) for (gi = 0; gi <= FN; gi++) { var vi = gr * (FN + 1) + gi; gUv[vi * 2] = (-FP + gi * (2 * FP / FN)) / 4; gUv[vi * 2 + 1] = (GZ0 + (GZ1 - GZ0) * gr / ZR) / 4; }
+    for (gr = 0; gr < ZR; gr++) for (gi = 0; gi < FN; gi++) { var q0 = gr * (FN + 1) + gi, q1 = q0 + FN + 1; gIdx.push(q0, q1, q0 + 1, q0 + 1, q1, q1 + 1); }
+    gGeo.setAttribute("position", new THREE.BufferAttribute(gPos, 3)); gGeo.setAttribute("uv", new THREE.BufferAttribute(gUv, 2)); gGeo.setIndex(gIdx);
+    function updateGround(thMax) {
+      for (var a = 0; a <= FN; a++) { var pa = -FP + a * (2 * FP / FN); for (var b2 = 0; b2 <= ZR; b2++) { var zz = GZ0 + (GZ1 - GZ0) * b2 / ZR, S = surf(pa, thMax, zz), k = (b2 * (FN + 1) + a) * 3; gPos[k] = S.x; gPos[k + 1] = S.y; gPos[k + 2] = zz; } }
+      gGeo.attributes.position.needsUpdate = true;
+    }
+    updateGround(0);
+    var crkVec = new THREE.Vector4(-61, 0, 0, 0);                                                    // crack: centre and half length along the avenue, widest half-width, hairline (all in lattice cells)
+    var CRK = 'uniform vec4 uCrk; float hh(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }\n' +
+      'float vnoise(vec2 p) { vec2 i = floor(p), f = fract(p); f = f * f * (3.0 - 2.0 * f); return mix(mix(hh(i), hh(i + vec2(1.0, 0.0)), f.x), mix(hh(i + vec2(0.0, 1.0)), hh(i + vec2(1.0, 1.0)), f.x), f.y); }\n' +
+      'vec2 crackAt(float v) { float s = (v - uCrk.x) / max(uCrk.y, 0.001); if (abs(s) >= 1.0) return vec2(0.0, -1.0);\n' +
+      '  float prof = pow(1.0 - abs(s), 0.6), jag = 0.6 + 0.8 * vnoise(vec2(v * 2.3, 1.7)), cu = 0.8 * (vnoise(vec2(v * 0.45, 9.1)) - 0.5);\n' +
+      '  return vec2(cu, uCrk.w * prof + uCrk.z * prof * jag); }\n';
+    var gmat = new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide });
+    gmat.onBeforeCompile = function (sh) {
+      sh.uniforms.uCrk = { value: crkVec };
+      sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\n' + CRK)
+        .replace('#include <begin_vertex>', '#include <begin_vertex>\n{ vec2 ck = crackAt(uv.y); if (ck.y >= 0.0) { float cd = abs(uv.x - ck.x) - ck.y; transformed.y += 1.4 * (1.0 - smoothstep(0.0, 1.6, max(cd, 0.0))) * smoothstep(0.0, 0.6, uCrk.z); } }');   // the lips of the cut lift
+      sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\n' + CRK)
+        .replace('#include <map_fragment>', [
+          'vec2 ck = crackAt(vUv.y); float cd = ck.y < 0.0 ? 99.0 : abs(vUv.x - ck.x) - ck.y; if (cd < 0.0) discard;',                                    // the cut itself
+          'float CM = 2.0, k2 = clamp(1.0 - cd / CM, 0.0, 1.0); vec2 uvS = vUv; if (ck.y >= 0.0) uvS.x = mix(vUv.x, ck.x + sign(vUv.x - ck.x) * ck.y, pow(k2, 1.4) * 0.97);',   // stretch: the lattice smears out from the edge
+          'vec4 texelColor = texture2D(map, uvS); texelColor = mapTexelToLinear(texelColor); diffuseColor *= texelColor;',
+          'float ca = smoothstep(0.0, CM * 0.85, cd); if (cd < CM && vnoise(vUv * 7.0) > ca * 1.15 + 0.02) discard;',                                      // decay: it breaks up toward the edge
+          'diffuseColor.rgb *= mix(0.4, 1.0, ca);'].join('\n'));
+    };
+    var ground = new THREE.Mesh(gGeo, gmat); ground.frustumCulled = false; sc.add(ground);
+    var underlay = new THREE.Mesh(new THREE.PlaneGeometry(140, 480), new THREE.MeshBasicMaterial({ color: 0x2a0808 })); underlay.rotation.x = -Math.PI / 2; underlay.position.set(0, -14, -245); sc.add(underlay);   // deep down the cut, and hazier the further it goes
+    // towers stand on the sheet, so when it folds they go with it and the ones on the upper fold hang over you. They are short down the middle and
+    // grow taller toward the sides (and toward the distance); a street is left open down the middle.
+    var seed = 7; function rnd() { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
+    var pal = [0xece5e8, 0xdcd6e8, 0xc4cce2, 0xe6d6dc, 0xbab5cb, 0xaac1da, 0xf2eeec].map(function (c) { return new THREE.MeshLambertMaterial({ color: c, fog: false }); });
+    var geo = new THREE.BoxGeometry(1, 1, 1); geo.translate(0, 0.5, 0);
+    var recs = [];
+    for (var iz = -140; iz <= 1; iz++) for (var ix = -38; ix <= 38; ix++) {
+      if (Math.abs(ix) < 3 || rnd() > (0.45 + 0.35 * Math.min(1, Math.max(0, (-iz - 40) / 60))) * (0.12 + 0.88 * Math.min(1, -iz / 32)) || (Math.abs(ix) < 11 && iz > -20) || (Math.abs(ix) < 6 && iz <= -12 && iz >= -36)) continue;      // far fewer towers up close, and a clear void in front where the words are set
+      var px = ix * 4 + (rnd() - 0.5) * 0.6, side = Math.min(1, Math.max(0, (Math.abs(px) - 16) / 70)), w = 2.3 + rnd() * 1.0;
+      var h = (3 + rnd() * 6 + side * rnd() * 26) * (0.3 + 0.7 * Math.min(1, -iz / 45)) * (1 + 0.5 * Math.min(1, Math.max(0, (-iz - 60) / 60))), mi = Math.floor(rnd() * pal.length);
+      recs.push({ mi: mi, x: px, z: iz * 4 + (rnd() - 0.5) * 0.6, w: w, h: h, d: rnd() * 2.0, per: 45 + rnd() * 70, off: rnd() * 120, pull: 7 + rnd() * 6 });
+    }
+    var inst = pal.map(function (mat, mi) {
+      var list = recs.filter(function (r) { return r.mi === mi; }), up = new THREE.InstancedMesh(geo, mat, list.length);
+      up.frustumCulled = false; sc.add(up); return { list: list, up: up };
+    });
+    var dummy = new THREE.Object3D();
+    function updateTowers(T, thMax) {                                                              // every so often a tower lets go of the floor and is pulled up the sheet into the fold, then grows again where it stood
+      inst.forEach(function (g) {
+        g.list.forEach(function (r, i) {
+          var q = sm((T - 1.0 - r.d) / 1.8), life = T + r.off, cyc = life % r.per, ps = r.per - r.pull, u = cyc > ps ? (cyc - ps) / r.pull : 0;
+          var pp = r.x + (r.x < 0 ? -1 : 1) * 170 * u * u * u, vis = 1 - sm((u - 0.78) / 0.22), grow = life >= r.per ? sm(cyc / 2.5) : 1, S = surf(pp, thMax, r.z);
+          dummy.position.set(S.x, S.y, r.z); dummy.rotation.set(0, 0, S.b); dummy.scale.set(r.w, Math.max(0.001, r.h * q * vis * grow), r.w); dummy.updateMatrix(); g.up.setMatrixAt(i, dummy.matrix);
+        });
+        g.up.instanceMatrix.needsUpdate = true;
+      });
+    }    var hemi = new THREE.HemisphereLight(0x8fc0ff, 0xc9bcc6, 0.8), sun = new THREE.DirectionalLight(0xffd8c0, 0); sun.position.set(-25, 20, 30); sc.add(hemi);
+    var sc2 = new THREE.Scene(), hemi2 = new THREE.HemisphereLight(0x8fc0ff, 0xff9ccb, 0.2); sc2.add(sun, hemi2);                      // the hedron is lit in its own pass, by its own single light
+    var sunT = new THREE.DirectionalLight(0xffe2c8, 0); sunT.position.set(-120, 120, 140); sc.add(sunT);                            // a gentle light for the towers
+    var dome = new THREE.Mesh(new THREE.SphereGeometry(1000, 24, 16), new THREE.ShaderMaterial({ side: THREE.BackSide, depthWrite: false, fog: false,
+      uniforms: { uOff: { value: 0 }, uAmt: { value: 0 }, uSun: { value: -0.05 }, uDesk: { value: new THREE.Color(deskCss) }, uPink: { value: new THREE.Color(1.0, 0.36, 0.68) }, uBlue: { value: new THREE.Color(0.16, 0.52, 1.0) }, uHaze: { value: new THREE.Color(1.0, 0.6, 0.82) } },
+      vertexShader: "varying vec3 vDir; void main() { vDir = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }",
+      fragmentShader: "uniform float uAmt, uSun, uOff; uniform vec3 uDesk, uPink, uBlue, uHaze; varying vec3 vDir;" +
+        "void main() { vec3 d = normalize(vDir); float h = clamp(d.y, 0.0, 1.0);" +
+        " vec3 g = mix(uPink, uBlue, smoothstep(0.15, 1.0, h)); g = mix(g, uHaze, exp(-h * 3.2) * 0.45);" +        // pink at the horizon and well up the sky, blue only high overhead
+        " float sd = max(dot(d, normalize(vec3(0.0, uSun, -1.0))), 0.0); g += vec3(1.0, 0.8, 0.7) * pow(sd, 90.0) * 0.4 + vec3(1.0, 0.72, 0.78) * pow(sd, 8.0) * 0.12;" +
+        " gl_FragColor = vec4(mix(mix(uDesk, g, uAmt), vec3(0.0), uOff), 1.0); }" }));
+    dome.frustumCulled = false; dome.renderOrder = -1; sc.add(dome);
+    // The hedron: a planet built from 200 copies of ONE tower that has itself been twisted, bent and barbed into something wrong. Every copy is the
+    // same size and the same single colour; they are only turned and mirrored. One external light. Slabs wheel round a black pupil like the leaves of an
+    // iris, lids of them close in round it, and a shell of them piles onto a black core (standing out, driven in, speared through the eye), so it reads
+    // as an eye held inside a black hole of tangled structure.
+    renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    var hed = new THREE.Group(), slabGeo = new THREE.BoxGeometry(0.12, 0.12, 0.8, 2, 2, 16);
+    (function () {                                                                                   // the one tower form: twisted along its length, bowed, with a hooked barb near the top
+      var pa = slabGeo.attributes.position, L = 0.8;
+      for (var q = 0; q < pa.count; q++) {
+        var x = pa.getX(q), y = pa.getY(q), z = pa.getZ(q), t = z / L + 0.5, a = (t - 0.5) * 2.4, c = Math.cos(a), s2 = Math.sin(a);
+        var xr = x * c - y * s2, yr = x * s2 + y * c;
+        xr += 0.16 * Math.sin(t * Math.PI) + (t > 0.68 && xr > -0.02 ? 0.09 * (t - 0.68) / 0.32 : 0);
+        yr += 0.07 * t * t - (t < 0.22 ? 0.03 * (0.22 - t) / 0.22 : 0);
+        pa.setXYZ(q, xr, yr, z);
+      }
+      slabGeo.computeVertexNormals();
+    })();
+    var slabMat = new THREE.MeshStandardMaterial({ color: 0xe4d8cf, roughness: 0.9, metalness: 0, fog: false, emissive: 0x3a1420, emissiveIntensity: 1, side: THREE.DoubleSide });
+    var hseed = 11; function r2() { hseed = (hseed * 16807) % 2147483647; return hseed / 2147483647; }
+    var ZAX = new THREE.Vector3(0, 0, 1), V3 = THREE.Vector3, irisG = new THREE.Group(), lidG = new THREE.Group(), shellG = new THREE.Group(), spearG = new THREE.Group(), nSlabs = 0;
+    function slab(parent, pos, dir, roll, mirror) {                                                  // a slab is now just a matrix in a rig; each rig is drawn as one instanced mesh
+      var q = new THREE.Quaternion().setFromUnitVectors(ZAX, dir.clone().normalize()); q.multiply(new THREE.Quaternion().setFromAxisAngle(ZAX, roll));
+      (parent.userData.mats = parent.userData.mats || []).push(new THREE.Matrix4().compose(pos, q, new V3(mirror ? -1 : 1, 1, 1))); nSlabs++;      // mirrored copies
+    }
+    var core = new THREE.Mesh(new THREE.SphereGeometry(0.72, 28, 18), new THREE.MeshBasicMaterial({ color: 0x000000, fog: false })); hed.add(core);        // the black hole under it all
+    var i, th, t, n, ring;
+    var hc = document.createElement("canvas"); hc.width = hc.height = 256; var hx = hc.getContext("2d"), gr = hx.createRadialGradient(128, 128, 0, 128, 128, 128);        // the black hole: a dark halo behind it all
+    gr.addColorStop(0, "rgba(0,0,0,0.97)"); gr.addColorStop(0.5, "rgba(0,0,0,0.92)"); gr.addColorStop(1, "rgba(0,0,0,0)"); hx.fillStyle = gr; hx.fillRect(0, 0, 256, 256);
+    var halo = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 4.6), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(hc), transparent: true, depthWrite: false, fog: false })); halo.position.z = -0.4; hed.add(halo);
+    // Black-hole light, in the manner of Interstellar's Gargantua: a bright ring of light round the pupil (hotter on one side, slowly turning), a thin
+    // band of light across it, and a lensed glow that hugs the hedron's edge.
+    function glowTex(w, h, draw) { var c = document.createElement("canvas"); c.width = w; c.height = h; draw(c.getContext("2d"), w, h); return new THREE.CanvasTexture(c); }
+    var addMat = function (tex) { return new THREE.MeshBasicMaterial({ map: tex, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }); };
+    var glow = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 4.6), addMat(glowTex(256, 256, function (x, w, h) {            // the lensed edge glow
+      var g = x.createRadialGradient(128, 128, 0, 128, 128, 128); g.addColorStop(0, "rgba(255,170,215,0)"); g.addColorStop(0.4, "rgba(255,170,215,0)"); g.addColorStop(0.5, "rgba(255,246,214,0.4)");
+      g.addColorStop(0.58, "rgba(255,214,140,0.46)"); g.addColorStop(0.76, "rgba(255,190,110,0.13)"); g.addColorStop(1, "rgba(255,190,110,0)"); x.fillStyle = g; x.fillRect(0, 0, w, h); })));
+    glow.position.z = -0.3; hed.add(glow);
+    var ringL = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 2.4), addMat(glowTex(1024, 1024, function (x, w, h) {         // the light round the black core, after Gargantua: a narrow, solid ring
+      x.translate(512, 512); x.lineCap = "round"; var K = 512 / 1.2, PI = Math.PI;
+      [[0.66, -PI * 0.96, -PI * 0.04, "255,232,180", 0.42, 6], [0.72, -PI * 0.94, -PI * 0.06, "255,200,125", 0.26, 8],        // faint, thin lensed arcs over the top
+       [0.6, PI * 0.12, PI * 0.88, "255,228,172", 0.3, 5]].forEach(function (a) {                                             // and a smaller one underneath
+        x.strokeStyle = "rgba(" + a[3] + "," + a[4] + ")"; x.lineWidth = a[5]; x.shadowColor = "rgba(255,214,140,0.7)"; x.shadowBlur = 8; x.beginPath(); x.arc(0, 0, a[0] * K, a[1], a[2]); x.stroke(); });
+      x.shadowColor = "rgba(255,226,150,0.9)"; x.shadowBlur = 7;
+      x.strokeStyle = "rgba(255,214,120,0.95)"; x.lineWidth = 12; x.beginPath(); x.arc(0, 0, 0.49 * K, 0, PI * 2); x.stroke();          // a thin yellow rim just outside
+      x.strokeStyle = "rgba(255,255,255,1)"; x.lineWidth = 21; x.beginPath(); x.arc(0, 0, 0.46 * K, 0, PI * 2); x.stroke();            // the solid white ring
+      x.shadowBlur = 12; x.lineWidth = 19; x.beginPath(); x.arc(0, 0, 0.46 * K, -0.7, 0.7); x.stroke();                              // a little heavier on one side
+    })));    ringL.position.z = 1.3; ringL.material.depthTest = false; ringL.renderOrder = 5; hed.add(ringL);
+
+    var cnt, R, zz;
+    for (ring = 0; ring < 5; ring++) {                                                               // the iris: five rings of leaves funnelling in round a big black pupil (160)
+      cnt = [28, 30, 32, 34, 36][ring]; R = [0.5, 0.64, 0.78, 0.92, 1.06][ring]; zz = [0.8, 0.76, 0.72, 0.66, 0.6][ring];
+      for (i = 0; i < cnt; i++) {
+        th = (i + ring * 0.37) / cnt * Math.PI * 2; t = new V3(-Math.sin(th), Math.cos(th), 0); n = new V3(-Math.cos(th), -Math.sin(th), 0);
+        slab(irisG, new V3(Math.cos(th) * R, Math.sin(th) * R, zz), t.multiplyScalar(0.92).add(n.multiplyScalar(0.1 + 0.05 * ring)).add(new V3(0, 0, 0.35 - 0.07 * ring)), r2() * 6.28, r2() < 0.5);
+      }
+    }    var gi, P = 373;
+    for (gi = 0; gi < P; gi++) {                                                                     // the gore: slabs piled round the rim of the planet (about 70)
+      var zc = 1 - (gi + 0.5) / P * 2, ph = gi * 2.399963, rr = Math.sqrt(Math.max(0, 1 - zc * zc)), rad = new V3(rr * Math.cos(ph), rr * Math.sin(ph), zc);
+      if (zc > 0.4 || zc < -0.35) continue;
+      var rnd3 = new V3(r2() - 0.5, r2() - 0.5, r2() - 0.5), tan = new V3().crossVectors(rad, rnd3).normalize(), mix = r2(), al = mix < 0.5 ? 1.5 : mix < 0.8 ? 0 : (0.3 + r2() * 0.9);
+      slab(shellG, rad.clone().multiplyScalar(1.12), rad.clone().multiplyScalar(Math.cos(al)).add(tan.multiplyScalar(Math.sin(al))), r2() * 6.28, r2() < 0.5);
+    }
+    var nSpear = 340 - nSlabs;                                                                       // the rest (to make exactly 200) are driven through the rings into the black
+    for (i = 0; i < nSpear; i++) {
+      th = i * 1.07 + 0.3; var rs = 0.78 + 0.34 * ((i * 7) % 5) / 4; slab(spearG, new V3(Math.cos(th) * rs, Math.sin(th) * rs, 0.9), new V3(Math.sin(th) * 0.45, -Math.cos(th) * 0.45, -0.85), r2() * 6.28, r2() < 0.5);
+    }    var diskG = new THREE.Group(), diskA = new THREE.Group(), diskB = new THREE.Group();                // two flat rigs, tilted a little toward you so they read as thin discs
+    diskG.rotation.x = 0.07; diskG.add(diskA, diskB); hed.add(diskG);
+    function slabRing(parent, count, R, phase) {
+      for (var q = 0; q < count; q++) { var an = (q + phase) / count * Math.PI * 2; slab(parent, new V3(Math.cos(an) * R, (r2() - 0.5) * 0.04, Math.sin(an) * R), new V3(-Math.sin(an), 0, Math.cos(an)), r2() * 6.28, r2() < 0.5); }
+    }
+    slabRing(diskA, 28, 0.64, 0); slabRing(diskA, 30, 0.76, 0.5); slabRing(diskA, 30, 0.88, 0.2); slabRing(diskA, 32, 1.0, 0.7);         // the core rig: 120
+    slabRing(diskB, 24, 1.5, 0); slabRing(diskB, 26, 1.72, 0.3); slabRing(diskB, 28, 1.94, 0.6); slabRing(diskB, 30, 2.16, 0.1); slabRing(diskB, 32, 2.38, 0.5);   // the outer rig: 140
+    [irisG, shellG, spearG, diskA, diskB].forEach(function (grp) {                                  // each rig becomes ONE instanced mesh: 600 slabs in five draw calls
+      var mats = grp.userData.mats || [], im = new THREE.InstancedMesh(slabGeo, slabMat, mats.length); im.castShadow = true; im.receiveShadow = true; im.frustumCulled = false;
+      mats.forEach(function (m4, k) { im.setMatrixAt(k, m4); }); grp.add(im);
+    });
+    window.tightfitSlabs = nSlabs;
+    hed.add(irisG, lidG, shellG, spearG); hed.frustumCulled = false; sc2.add(hed); sc2.add(sun.target);
+    sun.castShadow = true; sun.shadow.mapSize.set(window.innerWidth < 900 ? 1024 : 2048, window.innerWidth < 900 ? 1024 : 2048); sun.shadow.bias = -0.0006; sun.color.set(0xffe2c8);
+    var scam = sun.shadow.camera; scam.left = -160; scam.right = 160; scam.top = 160; scam.bottom = -160; scam.near = 10; scam.far = 700; scam.updateProjectionMatrix();
+    var gaze = { x: 0, y: 0 }, ptr = null;
+    function onPtr(e) { ptr = { x: (e.clientX / window.innerWidth - 0.5) * 2, y: -(e.clientY / window.innerHeight - 0.5) * 2 }; }
+    window.addEventListener("pointermove", onPtr);
+    function spinHed(T, hs) {
+      hed.lookAt(cam.position);                                                                  // it faces you; the whole never travels, only its parts move
+      var tx = ptr ? ptr.x : Math.sin(T * 0.7) * 0.35, ty = ptr ? ptr.y : Math.sin(T * 0.53 + 1) * 0.25;
+      gaze.x += (tx - gaze.x) * 0.05; gaze.y += (ty - gaze.y) * 0.05; hed.rotateY(gaze.x * 0.12); hed.rotateX(-gaze.y * 0.1);
+      irisG.rotation.z = T * 0.18; lidG.rotation.z = Math.sin(T * 0.4) * 0.05; shellG.rotation.set(Math.sin(T * 0.3) * 0.05, Math.cos(T * 0.25) * 0.05, -T * 0.04); spearG.rotation.z = Math.sin(T * 0.6) * 0.14; diskA.rotation.y = T * 0.22; diskB.rotation.y = -T * 0.1;
+      sun.position.copy(hed.position).add(new V3(-120, 120, 140)); sun.target.position.copy(hed.position); sun.target.updateMatrixWorld();      // one light from the left, low and hard
+      sun.intensity = 2.6 * hs; hemi2.intensity = 0.2; glow.material.opacity = (0.85 + 0.12 * Math.sin(T * 1.3)) * hs; ringL.material.opacity = (0.96 + 0.04 * Math.sin(T * 2.1)) * hs; ringL.rotation.z = Math.sin(T * 0.3) * 0.03;
+    }    var D0 = (VH / 66) / Math.tan(17.5 * Math.PI / 180);                                   // top-down height at which the grid shows at its normal 33px cells
+    function sm(x) { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); }
+    var ended = false, raf = 0, towersSettled = false, lastGroundT = -1;
+    function draw(T) {
+      var s1 = sm((T - 0.6) / 6.0), L = sm((T - 2.0) / 3.5), Z = sm((T - 8.0) / 6.0);
+      cam.rotation.set(-Math.PI / 2 + s1 * (Math.PI / 2 - 0.02), 0, 0);                      // looking straight down at first, then up toward the horizon
+      cam.position.set(0, D0 + (6 - D0) * s1, 30 * s1); cam.fov = 35 + 33 * s1; cam.updateProjectionMatrix();
+      var off = sm((T - 300) / 8);                                                           // after about 5 minutes the sky is switched off
+      var ss = T / 120; patP = Math.floor(ss) + sm((ss - Math.floor(ss) - 0.7) / 0.3);                      // a new step every two minutes, eased in over the last half minute before it
+      var fold = sm((T - 5.5) / 6.5) * FTH * (1 + 0.07 * Math.min(patP, 5));                                                  // the lattice curls up and over from the sides
+      if (T < 12.5 || !towersSettled || T - lastGroundT > 0.2) { updateGround(fold); lastGroundT = T; if (T >= 12.5) towersSettled = true; }
+      updateTowers(T, fold);
+      { var cf1 = sm((T - 14) / 12), cf2 = sm((T - 26) / 40); crkVec.set(-58, 47 * cf1, (3.0 + 0.9 * Math.min(patP, 5)) * cf2, 0.12 * cf1); }                    // the crack forms (hairline) and then splits open      hemi.intensity = (0.8 + 0.1 * L) * (1 - 0.8 * off); sunT.intensity = 0.7 * L * (1 - 0.8 * off);
+      palAt(patP, "p", cP); palAt(patP, "b", cB); palAt(patP, "h", cH); palAt(patP, "g", cG);                  // the sky and the lattice slide into the next hue as each step comes in
+      dome.material.uniforms.uPink.value.setRGB(cP[0], cP[1], cP[2]); dome.material.uniforms.uBlue.value.setRGB(cB[0], cB[1], cB[2]); dome.material.uniforms.uHaze.value.setRGB(cH[0], cH[1], cH[2]);
+      ground.material.color.setRGB((1 - 0.06 * L) * (1 - 0.88 * off) * cG[0], (1 - 0.2 * L) * (1 - 0.88 * off) * cG[1], (1 - 0.1 * L) * (1 - 0.88 * off) * cG[2]);
+      sc.fog.near = 400 - 360 * L; sc.fog.far = 700 - 200 * L;
+      dome.material.uniforms.uAmt.value = L; dome.material.uniforms.uOff.value = off; dome.material.uniforms.uSun.value = -0.05 + 0.19 * L; dome.position.copy(cam.position);
+      var slope = -0.05 + 0.19 * L, hs = sm((T - 2.2) / 2.0); hed.position.set(0, cam.position.y + slope * 440, cam.position.z - 440); { var hsz = Math.max(0.001, 50 * hs); hed.scale.setScalar(hsz); } spinHed(T, hs);
+      sc.fog.color.setRGB(cH[0] * 0.95 * (1 - off), cH[1] * (1 - 0.2 * L) * (1 - off), cH[2] * (1 - 0.05 * L) * (1 - off));
+      var v = new THREE.Vector3(0, cam.position.y, cam.position.z - 3000).project(cam), vx = 50, vy = 50;
+      if (s1 > 0.5 && isFinite(v.x) && v.z < 1) { vx = (v.x * 0.5 + 0.5) * 100; vy = (1 - (v.y * 0.5 + 0.5)) * 100; }
+      cv.style.transformOrigin = vx.toFixed(1) + "% " + vy.toFixed(1) + "%"; cv.style.transform = "scale(" + (1 + 0.18 * Z).toFixed(4) + ")";   // the crop in toward the vanishing point
+      { var pv = hed.position.clone().project(cam), ox = (parseFloat(cv.style.transformOrigin) || 50) / 100 * VW, oy = (parseFloat((cv.style.transformOrigin.split(" ")[1]) || "50") || 50) / 100 * VH, S = 1 + 0.18 * Z;
+        var gx = ox + ((pv.x * 0.5 + 0.5) * VW - ox) * S, gy = oy + ((1 - (pv.y * 0.5 + 0.5)) * VH - oy) * S, rpx = (hed.scale.x * 1.2 / cam.position.distanceTo(hed.position)) * (VH / 2) / Math.tan(cam.fov * Math.PI / 360) * S;
+        grain.style.setProperty("--gx", gx.toFixed(1) + "px"); grain.style.setProperty("--gy", gy.toFixed(1) + "px"); grain.style.setProperty("--g1", (rpx * 0.9).toFixed(1) + "px"); grain.style.setProperty("--g2", (rpx * 2.4).toFixed(1) + "px");
+        grain.style.backgroundPosition = ((Math.random() * 160) | 0) + "px " + ((Math.random() * 160) | 0) + "px"; }
+      noise.style.backgroundPosition = ((Math.random() * 200) | 0) + "px " + ((Math.random() * 200) | 0) + "px";                // jittered every frame so it shimmers like film grain
+      lyric.style.top = (vy + 13).toFixed(1) + "%";                                                  // just under the horizon line
+      lyric.style.color = off > 0.5 ? "#b52a34" : "";                                                       // a little brighter once the sky is gone, so the maroon can still be read
+      for (var li = 0; li < lyric.children.length; li++) {                                         // each line fades in, holds, fades away, and the next takes its place
+        var tt = T - lyStart[li], lop = 0; if (tt >= 0) { tt = tt % lyPeriod; if (tt < lyDur[li]) lop = sm(tt / 1.3) * (1 - sm((tt - (lyDur[li] - 1.3)) / 1.3)); }
+        lyric.children[li].style.opacity = lop.toFixed(3);
+      }
+      renderer.autoClear = false; renderer.clear(); renderer.render(sc, cam); renderer.clearDepth(); renderer.render(sc2, cam);      // sky, floor and towers, then the hedron over the same depth
+    }
+    function end() {
+      if (ended) return; ended = true; cancelAnimationFrame(raf); wrap.style.opacity = 0; showAll();
+      setTimeout(function () { renderer.dispose(); window.removeEventListener("pointermove", onPtr); window.removeEventListener("keydown", onEsc); wrap.remove(); }, 1000);
+    }
+    function onEsc(e) { if (e.key === "Escape") { e.preventDefault(); end(); } }      // Esc is the only way out
+    window.addEventListener("keydown", onEsc);
+    if (fixedT !== null) { wrap.style.opacity = 1; draw(fixedT); return; }
+    var t0 = performance.now(); requestAnimationFrame(function () { wrap.style.opacity = 1; });
+    (function loop(now) { if (ended) return; var T = Math.max(0, (now - t0) / 1000); try { draw(T); } catch (err) { if (window.console) console.error(err); } raf = requestAnimationFrame(loop); })(t0);        // a frame can never kill the loop; and the first frame's timestamp can come a hair before t0, so T never goes negative        // it never ends by itself
+  }  function start() {
+    if (on) return; on = true; window.tightfitSunriseOn = true;
+    hideAll();
+    setTimeout(dialog, 850);
+  }
+  window.tightfitSunrise = start;
+  var buf = "";
+  window.addEventListener("keydown", function (e) {                                              // a physical keyboard, anywhere (text boxes included)
+    if (e.ctrlKey || e.metaKey || e.altKey || !e.key || e.key.length !== 1) return;
+    buf = (buf + e.key.toLowerCase()).slice(-7);
+    if (buf === "sunrise") { buf = ""; start(); }
+  });
+  // A phone's on-screen keyboard doesn't send ordinary key presses, so also watch what lands in any text box: if it ends in "sunrise", that's it.
+  function typedText(el) { return el ? (typeof el.value === "string" ? el.value : (el.isContentEditable ? el.textContent : "")) : ""; }
+  function checkTyped(e) {
+    var tx = typedText(e.target).toLowerCase(), dt = (e.data || "").toLowerCase();
+    if (/sunrise\s*$/.test(tx) || dt.indexOf("sunrise") !== -1) start();
+  }
+  document.addEventListener("input", checkTyped, true);
+  document.addEventListener("compositionend", checkTyped, true);
+  // The address bar can't be read from a page, but the page can answer to it: open the site with #sunrise on the end (tightfit.soilguessr.com/#sunrise).
+  function checkHash() { if (/^#sunrise$/i.test(location.hash)) { try { history.replaceState(null, "", location.pathname + location.search); } catch (_) {} start(); } }
+  window.addEventListener("hashchange", checkHash); setTimeout(checkHash, 1200);
+  var clock = document.getElementById("clock"), taps = [];
+  if (clock) clock.addEventListener("click", function () {
+    var n = performance.now(); taps = taps.filter(function (v) { return n - v < 3000; }); taps.push(n);
+    if (taps.length >= 5) { taps = []; start(); }
+  });
+})();
+</script></body>
 </html>
+
+</body></html>
