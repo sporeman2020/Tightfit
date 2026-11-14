@@ -2093,17 +2093,26 @@ Rack: middle</pre>` },
 // Secret: type "credits" and a Credits window opens with the Soilguessr logo and the names.
 (function () {
   var buf = "", open = null;
-  function close() { if (open) { open.remove(); open = null; } }
+  var hiddenEls = [];
+  function restoreAll() { hiddenEls.forEach(function (el) { el.style.visibility = ''; }); hiddenEls = []; }
+  function hideAllTabs(keep) { hiddenEls = Array.prototype.slice.call(document.body.children).filter(function (el) { return el !== keep && !/^(SCRIPT|STYLE|LINK)$/.test(el.tagName); }); hiddenEls.forEach(function (el) { el.style.visibility = 'hidden'; }); }
+  function close() { if (open) { open.remove(); open = null; } restoreAll(); }
   function show() {
     close();
     var d = document.createElement("div"); d.className = "note credits-dialog";
-    d.style.cssText = "position:fixed;left:50%;top:30%;width:320px;margin-left:-160px;z-index:4000;cursor:default;";
+    d.style.cssText = "position:fixed;left:50%;top:50%;width:320px;transform:translate(-50%,-50%);max-height:96vh;overflow:auto;z-index:4000;cursor:default;";
     d.innerHTML = '<div class="note-title"><span>Credits</span><span></span></div>' +
       '<div class="note-body" style="text-align:center;">' +
       '<img src="images/soilguessr-logo.svg" alt="Soilguessr" style="display:block;width:100%;height:auto;margin:6px 0 12px;">' +
-      '<div>Sean Young</div><div>Mike Ze Dong</div></div>' +
+      '<div>Sean Young</div>' +
+      '<div style="font:16px MGPixel, monospace;margin-top:10px;color:#fff;text-shadow:-2px -2px 0 #000,0 -2px 0 #000,2px -2px 0 #000,-2px 0 0 #000,2px 0 0 #000,-2px 2px 0 #000,0 2px 0 #000,2px 2px 0 #000;">Smoovement</div>' +
+      '<div style="font:2px MGPixel, monospace;opacity:.6;margin:6px 0;">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris. <span style="font:bold 4px MGPixel, monospace;opacity:1;">This is here for legal reasons</span> Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia.</div>' +
+      '<div>Mike Ze Dong</div>' +
+      '<p style="margin:14px 0 4px;">Inspired by the works of Frapp</p>' +
+      '<p style="margin:10px 0 4px;">Dedicated to Mahjong Club</p>' + '<div>Camden Hildy</div><div>Casey Tsou</div><div>Moira Ford</div><div>Lucas (Trick) Byron</div><div>Sofia San Roman</div><div>Dominique</div><div>Reece Nadle</div><div>Graham Ried</div><div>Ian Bish</div><div>Aidan (Balatro) Rand</div><div>Lindsey DeJesus</div><div>Josh Ho</div></div>' +
       '<div class="row"><button type="button" class="note-ok" data-a="close">OK</button></div>';
     document.body.appendChild(d);
+    hideAllTabs(d);
     d.addEventListener("click", function (e) { if (e.target.closest("button")) close(); });
     open = d;
   }
