@@ -1929,11 +1929,11 @@ Rack: middle</pre>` },
     // iris, lids of them close in round it, and a shell of them piles onto a black core (standing out, driven in, speared through the eye), so it reads
     // as an eye held inside a black hole of tangled structure.
     renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    var hed = new THREE.Group(), slabGeo = new THREE.BoxGeometry(0.12, 0.12, 0.8, 2, 2, 16);
+    var hed = new THREE.Group(), slabGeo = new THREE.BoxGeometry(0.12, 0.12, 0.8, 3, 3, 28);
     (function () {                                                                                   // the one tower form: twisted along its length, bowed, with a hooked barb near the top
       var pa = slabGeo.attributes.position, L = 0.8;
       for (var q = 0; q < pa.count; q++) {
-        var x = pa.getX(q), y = pa.getY(q), z = pa.getZ(q), t = z / L + 0.5, a = (t - 0.5) * 2.4, c = Math.cos(a), s2 = Math.sin(a);
+        var x = pa.getX(q), y = pa.getY(q), z = pa.getZ(q), t = z / L + 0.5, a = (t - 0.5) * 3.6, c = Math.cos(a), s2 = Math.sin(a);
         var xr = x * c - y * s2, yr = x * s2 + y * c;
         xr += 0.16 * Math.sin(t * Math.PI) + (t > 0.68 && xr > -0.02 ? 0.09 * (t - 0.68) / 0.32 : 0);
         yr += 0.07 * t * t - (t < 0.22 ? 0.03 * (0.22 - t) / 0.22 : 0);
@@ -1957,7 +1957,7 @@ Rack: middle</pre>` },
     // band of light across it, and a lensed glow that hugs the hedron's edge.
     function glowTex(w, h, draw) { var c = document.createElement("canvas"); c.width = w; c.height = h; draw(c.getContext("2d"), w, h); return new THREE.CanvasTexture(c); }
     var addMat = function (tex) { return new THREE.MeshBasicMaterial({ map: tex, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }); };
-    var glow = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 4.6), addMat(glowTex(256, 256, function (x, w, h) {            // the lensed edge glow
+    var glow = new THREE.Mesh(new THREE.PlaneGeometry(3.7, 3.7), addMat(glowTex(256, 256, function (x, w, h) {            // the lensed edge glow
       var g = x.createRadialGradient(128, 128, 0, 128, 128, 128); g.addColorStop(0, "rgba(255,170,215,0)"); g.addColorStop(0.4, "rgba(255,170,215,0)"); g.addColorStop(0.5, "rgba(255,246,214,0.4)");
       g.addColorStop(0.58, "rgba(255,214,140,0.46)"); g.addColorStop(0.76, "rgba(255,190,110,0.13)"); g.addColorStop(1, "rgba(255,190,110,0)"); x.fillStyle = g; x.fillRect(0, 0, w, h); })));
     glow.position.z = -0.3; hed.add(glow);
@@ -1974,19 +1974,19 @@ Rack: middle</pre>` },
 
     var cnt, R, zz;
     for (ring = 0; ring < 5; ring++) {                                                               // the iris: five rings of leaves funnelling in round a big black pupil (160)
-      cnt = [28, 30, 32, 34, 36][ring]; R = [0.5, 0.64, 0.78, 0.92, 1.06][ring]; zz = [0.8, 0.76, 0.72, 0.66, 0.6][ring];
+      cnt = [56, 60, 64, 68, 72][ring]; R = [0.5, 0.64, 0.78, 0.92, 1.06][ring]; zz = [0.8, 0.76, 0.72, 0.66, 0.6][ring];
       for (i = 0; i < cnt; i++) {
         th = (i + ring * 0.37) / cnt * Math.PI * 2; t = new V3(-Math.sin(th), Math.cos(th), 0); n = new V3(-Math.cos(th), -Math.sin(th), 0);
         slab(irisG, new V3(Math.cos(th) * R, Math.sin(th) * R, zz), t.multiplyScalar(0.92).add(n.multiplyScalar(0.1 + 0.05 * ring)).add(new V3(0, 0, 0.35 - 0.07 * ring)), r2() * 6.28, r2() < 0.5);
       }
-    }    var gi, P = 373;
+    }    var gi, P = 746;
     for (gi = 0; gi < P; gi++) {                                                                     // the gore: slabs piled round the rim of the planet (about 70)
       var zc = 1 - (gi + 0.5) / P * 2, ph = gi * 2.399963, rr = Math.sqrt(Math.max(0, 1 - zc * zc)), rad = new V3(rr * Math.cos(ph), rr * Math.sin(ph), zc);
       if (zc > 0.4 || zc < -0.35) continue;
       var rnd3 = new V3(r2() - 0.5, r2() - 0.5, r2() - 0.5), tan = new V3().crossVectors(rad, rnd3).normalize(), mix = r2(), al = mix < 0.5 ? 1.5 : mix < 0.8 ? 0 : (0.3 + r2() * 0.9);
       slab(shellG, rad.clone().multiplyScalar(1.12), rad.clone().multiplyScalar(Math.cos(al)).add(tan.multiplyScalar(Math.sin(al))), r2() * 6.28, r2() < 0.5);
     }
-    var nSpear = 340 - nSlabs;                                                                       // the rest (to make exactly 200) are driven through the rings into the black
+    var nSpear = 680 - nSlabs;                                                                       // the rest (to make exactly 200) are driven through the rings into the black
     for (i = 0; i < nSpear; i++) {
       th = i * 1.07 + 0.3; var rs = 0.78 + 0.34 * ((i * 7) % 5) / 4; slab(spearG, new V3(Math.cos(th) * rs, Math.sin(th) * rs, 0.9), new V3(Math.sin(th) * 0.45, -Math.cos(th) * 0.45, -0.85), r2() * 6.28, r2() < 0.5);
     }    var diskG = new THREE.Group(), diskA = new THREE.Group(), diskB = new THREE.Group();                // two flat rigs, tilted a little toward you so they read as thin discs
