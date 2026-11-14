@@ -2017,16 +2017,63 @@ Rack: middle</pre>` },
     }    var D0 = (VH / 66) / Math.tan(17.5 * Math.PI / 180);                                   // top-down height at which the grid shows at its normal 33px cells
     function sm(x) { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); }
     var ended = false, raf = 0, towersSettled = false, lastGroundT = -1;
-    function draw(T) {
+    // ---- third person, the pink void, the board, and the final still on the hedron ----
+  var keysDown = {};
+  function keyName(e) { return e.key.length === 1 ? e.key.toLowerCase() : e.key; }
+  window.addEventListener("keydown", function (e) { if (ended) return; var k = keyName(e); if (k === "ArrowUp" || k === "ArrowDown" || k === "ArrowLeft" || k === "ArrowRight" || k === "w" || k === "a" || k === "s" || k === "d") { keysDown[k] = true; e.preventDefault(); } });
+  window.addEventListener("keyup", function (e) { delete keysDown[keyName(e)]; });
+  var pst = { on: false, final: false, x: 0, z: 22, last: null, hold: 0 }, lightsOff = false;
+  var ditherTex = (function () {                                                                         // a 4x4 Bayer matrix, used as an alpha map so surfaces read as dithered
+    var bayer = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5], c = document.createElement("canvas"); c.width = c.height = 4;
+    var x = c.getContext("2d"), im = x.createImageData(4, 4);
+    for (var k = 0; k < 16; k++) { var v = bayer[k] * 16 + 8; im.data[k * 4] = v; im.data[k * 4 + 1] = v; im.data[k * 4 + 2] = v; im.data[k * 4 + 3] = 255; }
+    x.putImageData(im, 0, 0);
+    var tx = new THREE.CanvasTexture(c); tx.magFilter = THREE.NearestFilter; tx.minFilter = THREE.NearestFilter; tx.wrapS = tx.wrapT = THREE.RepeatWrapping; return tx;
+  })();
+  var personMat = new THREE.MeshBasicMaterial({ color: 0x140810, alphaMap: ditherTex.clone(), alphaTest: 0.5, fog: false });
+  personMat.alphaMap.repeat.set(3, 3);
+  var person = new THREE.Group();                                                                      // a small dithered figure, built from boxes
+  function personPart(w, h, d, x, y) { var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), personMat); m.position.set(x, y, 0); person.add(m); }
+  personPart(0.22, 0.26, 0.22, 0, 1.62); personPart(0.42, 0.6, 0.22, 0, 1.1); personPart(0.12, 0.6, 0.12, -0.3, 1.1); personPart(0.12, 0.6, 0.12, 0.3, 1.1);
+  personPart(0.16, 0.75, 0.16, -0.11, 0.375); personPart(0.16, 0.75, 0.16, 0.11, 0.375);
+  person.visible = false; sc.add(person);
+  var voidMat = new THREE.MeshBasicMaterial({ color: 0xff6fb4, side: THREE.BackSide, alphaMap: ditherTex.clone(), alphaTest: 0.5, fog: false });
+  voidMat.alphaMap.repeat.set(24, 24);
+  var voidSphere = new THREE.Mesh(new THREE.SphereGeometry(1, 48, 32), voidMat); voidSphere.visible = false; sc.add(voidSphere);   // grows from the hedron until it encloses the camera
+  var boardEl = document.createElement("div");
+  boardEl.style.cssText = "position:absolute;left:0;right:0;top:16%;text-align:center;font:20px 'MGPixel','MS Sans Serif',sans-serif;color:#fff;letter-spacing:.06em;opacity:0;transition:opacity .9s;pointer-events:none;z-index:3;";
+  wrap.appendChild(boardEl);
+  var boardText = "";
+  function setBoard(text) { if (text === boardText) return; boardText = text; boardEl.textContent = text; boardEl.style.opacity = text ? "1" : "0"; }
+  function updatePlayer(T) {
+    if (ended) return;
+    var dt = pst.last === null ? 0 : Math.min(0.1, T - pst.last); pst.last = T;
+    var vp = sm((T - 45) / 90);
+    if (!pst.final && T > 45) { voidSphere.visible = true; voidSphere.position.copy(hed.position); voidSphere.scale.setScalar(Math.max(0.001, 470 * vp)); setBoard("BOARD: Intrusion/Invasion/Invalid Occupant"); }
+    if (pst.final) { voidSphere.visible = false; cam.position.set(0, 6, 30); cam.lookAt(hed.position); return; }
+    if (T < 14) return;
+    if (!pst.on) { pst.on = true; person.visible = true; pst.x = 0; pst.z = 22; }
+    var fwd = (keysDown.ArrowUp || keysDown.w) ? -1 : 0, back = (keysDown.ArrowDown || keysDown.s) ? 1 : 0;
+    var side = (keysDown.ArrowRight || keysDown.d) ? 1 : ((keysDown.ArrowLeft || keysDown.a) ? -1 : 0);
+    var holdingS = back === 1;
+    pst.hold = holdingS ? pst.hold + dt : 0;
+    var dx = side * 3.2 * dt, dz = (fwd + back) * 3.2 * dt;
+    if (!holdingS) { var px = hed.position.x - pst.x, pz = hed.position.z - pst.z, pl = Math.hypot(px, pz) || 1; dx += px / pl * 0.9 * dt; dz += pz / pl * 0.9 * dt; }   // drifts into the eye unless you push south
+    pst.x += dx; pst.z += dz;
+    person.position.set(pst.x, 0, pst.z);
+    cam.position.set(pst.x, 2.6, pst.z + 4.2); cam.lookAt(pst.x, 1.3, pst.z);
+    if (pst.hold >= 210) { pst.final = true; lightsOff = true; person.visible = false; voidSphere.visible = false; setBoard("BOARD: Fear/Allowance/Grip"); }
+  }  function draw(T) {
       var s1 = sm((T - 0.6) / 6.0), L = sm((T - 2.0) / 3.5), Z = sm((T - 8.0) / 6.0);
       cam.rotation.set(-Math.PI / 2 + s1 * (Math.PI / 2 - 0.02), 0, 0);                      // looking straight down at first, then up toward the horizon
       cam.position.set(0, D0 + (6 - D0) * s1, 30 * s1); cam.fov = 35 + 33 * s1; cam.updateProjectionMatrix();
+      updatePlayer(T);
       var off = sm((T - 300) / 8);                                                           // after about 5 minutes the sky is switched off
       var ss = T / 120; patP = Math.floor(ss) + sm((ss - Math.floor(ss) - 0.7) / 0.3);                      // a new step every two minutes, eased in over the last half minute before it
       var fold = sm((T - 5.5) / 6.5) * FTH * (1 + 0.07 * Math.min(patP, 5));                                                  // the lattice curls up and over from the sides
       if (T < 12.5 || !towersSettled || T - lastGroundT > 0.2) { updateGround(fold); lastGroundT = T; if (T >= 12.5) towersSettled = true; }
       updateTowers(T, fold);
-      { var cf1 = sm((T - 14) / 12), cf2 = sm((T - 26) / 40); crkVec.set(-58, 47 * cf1, (3.0 + 0.9 * Math.min(patP, 5)) * cf2, 0.12 * cf1); }                    // the crack forms (hairline) and then splits open      hemi.intensity = (0.8 + 0.1 * L) * (1 - 0.8 * off); sunT.intensity = 0.7 * L * (1 - 0.8 * off);
+      { var cf1 = sm((T - 14) / 12), cf2 = sm((T - 26) / 40); crkVec.set(-58, 47 * cf1, (3.0 + 0.9 * Math.min(patP, 5)) * cf2, 0.12 * cf1); }                    // the crack forms (hairline) and then splits open      hemi.intensity = (0.8 + 0.1 * L) * (1 - 0.8 * off); sunT.intensity = 0.7 * L * (1 - 0.8 * off); if (lightsOff) { hemi.intensity = 0; sunT.intensity = 0; }
       palAt(patP, "p", cP); palAt(patP, "b", cB); palAt(patP, "h", cH); palAt(patP, "g", cG);                  // the sky and the lattice slide into the next hue as each step comes in
       dome.material.uniforms.uPink.value.setRGB(cP[0], cP[1], cP[2]); dome.material.uniforms.uBlue.value.setRGB(cB[0], cB[1], cB[2]); dome.material.uniforms.uHaze.value.setRGB(cH[0], cH[1], cH[2]);
       ground.material.color.setRGB((1 - 0.06 * L) * (1 - 0.88 * off) * cG[0], (1 - 0.2 * L) * (1 - 0.88 * off) * cG[1], (1 - 0.1 * L) * (1 - 0.88 * off) * cG[2]);
