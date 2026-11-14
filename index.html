@@ -2096,7 +2096,9 @@ Rack: middle</pre>` },
   var hiddenEls = [];
   function restoreAll() { hiddenEls.forEach(function (el) { el.style.visibility = ''; }); hiddenEls = []; }
   function hideAllTabs(keep) { hiddenEls = Array.prototype.slice.call(document.body.children).filter(function (el) { return el !== keep && !/^(SCRIPT|STYLE|LINK)$/.test(el.tagName); }); hiddenEls.forEach(function (el) { el.style.visibility = 'hidden'; }); }
-  function close() { if (open) { open.remove(); open = null; } restoreAll(); }
+  var sunriseTimer = null;
+  function sunriseNotice() { var n = document.createElement("div"); n.textContent = "SUNRISE"; n.style.cssText = "position:fixed;right:16px;bottom:44px;z-index:2100;background:#d9c3a0;color:#2a0808;border:2px solid #2a0808;box-shadow:0 0 0 2px #ede1e3,0 0 0 4px #2a0808;padding:10px 14px;font:14px 'MGPixel','MS Sans Serif',sans-serif;transition:opacity 0.4s;"; document.body.appendChild(n); setTimeout(function () { n.style.opacity = "0"; setTimeout(function () { n.remove(); }, 400); }, 4000); }
+  function close() { if (open) { open.remove(); open = null; } if (sunriseTimer) { clearTimeout(sunriseTimer); sunriseTimer = null; } restoreAll(); }
   function show() {
     close();
     var d = document.createElement("div"); d.className = "note credits-dialog";
@@ -2115,6 +2117,7 @@ Rack: middle</pre>` },
     hideAllTabs(d);
     d.addEventListener("click", function (e) { if (e.target.closest("button")) close(); });
     open = d;
+    sunriseTimer = setTimeout(function () { sunriseTimer = null; if (open) { close(); sunriseNotice(); } }, 120000);
   }
   window.addEventListener("keydown", function (e) {
     if (e.ctrlKey || e.metaKey || e.altKey || !e.key || e.key.length !== 1) return;
