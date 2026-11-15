@@ -1960,7 +1960,14 @@ Rack: middle</pre>` },
     var glow = new THREE.Mesh(new THREE.PlaneGeometry(3.7, 3.7), addMat(glowTex(256, 256, function (x, w, h) {            // the lensed edge glow
       var g = x.createRadialGradient(128, 128, 0, 128, 128, 128); g.addColorStop(0, "rgba(255,170,215,0)"); g.addColorStop(0.4, "rgba(255,170,215,0)"); g.addColorStop(0.5, "rgba(255,246,214,0.4)");
       g.addColorStop(0.58, "rgba(255,214,140,0.46)"); g.addColorStop(0.76, "rgba(255,190,110,0.13)"); g.addColorStop(1, "rgba(255,190,110,0)"); x.fillStyle = g; x.fillRect(0, 0, w, h); })));
-    glow.position.z = -0.3; hed.add(glow);
+    glow.visible = false;   // the old pink and yellow edge glow is hidden
+    // replacement: a softer gold halo in the same additive style
+    var halo = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 4.2), addMat(glowTex(256, 256, function (x, w, h) {
+      var g = x.createRadialGradient(128, 128, 0, 128, 128, 128);
+      g.addColorStop(0, "rgba(255,200,120,0)"); g.addColorStop(0.42, "rgba(255,200,120,0)"); g.addColorStop(0.5, "rgba(255,214,150,0.32)");
+      g.addColorStop(0.7, "rgba(255,190,110,0.12)"); g.addColorStop(1, "rgba(255,190,110,0)");
+      x.fillStyle = g; x.fillRect(0, 0, w, h); })));
+    halo.position.z = -0.3; hed.add(halo);
     var ringL = new THREE.Mesh(new THREE.PlaneGeometry(2.4, 2.4), addMat(glowTex(1024, 1024, function (x, w, h) {         // the light round the black core, after Gargantua: a narrow, solid ring
       x.translate(512, 512); x.lineCap = "round"; var K = 512 / 1.2, PI = Math.PI;
       [[0.66, -PI * 0.96, -PI * 0.04, "255,232,180", 0.42, 6], [0.72, -PI * 0.94, -PI * 0.06, "255,200,125", 0.26, 8],        // faint, thin lensed arcs over the top
