@@ -2270,9 +2270,9 @@ Rack: middle</pre>` },
       return s;
     }
     var pieceWhite = new THREE.MeshStandardMaterial({ color: 0xf4ecd8, roughness: 0.4, metalness: 0 });
+    var pieceColMat = new THREE.MeshStandardMaterial({ color: new THREE.Color().setHSL(Math.random(), 0.55, 0.42), roughness: 0.45, metalness: 0 });
     function makePiece() {
-      var pick = new THREE.Color().setHSL(Math.random(), 0.55, 0.42);
-      var colMat = new THREE.MeshStandardMaterial({ color: pick, roughness: 0.45, metalness: 0 });
+      var colMat = pieceColMat;
       var g = new THREE.Group(), D = 0.28, d1 = D * 2 / 3, d2 = D / 3;
       var front = new THREE.Mesh(new THREE.ExtrudeGeometry(pieceRound(0.5, 0.72, 0.06), { depth: d1, bevelEnabled: false, curveSegments: 3 }), colMat);
       front.position.z = D / 2 - d1; g.add(front);
