@@ -2259,8 +2259,28 @@ Rack: middle</pre>` },
     var floorMat = new THREE.MeshStandardMaterial({ map: colTex, roughnessMap: rouTex, roughness: 0.05, metalness: 0, transparent: true, opacity: 0 });
     var floor = new THREE.Mesh(new THREE.PlaneGeometry(12, 9), floorMat);
     floor.rotation.x = -Math.PI / 2; sc2.add(floor);
-    var tileGeo = new THREE.BoxGeometry(0.5, 0.72, 0.28), tileMat = new THREE.MeshStandardMaterial({ color: 0xf4f4ef, roughness: 0.25, metalness: 0 });
-    function wall(x0, z0, dx, dz, n, rot) { for (var i = 0; i < n; i++) { var m = new THREE.Mesh(tileGeo, tileMat); m.position.set(x0 + dx * i, 0.36, z0 + dz * i); m.rotation.y = rot; sc2.add(m); } }
+
+    // the wall pieces use the same tile look: colour on the front two-thirds, white on the back third, a random colour for each piece
+    function pieceRound(w, h, rad) {
+      var s = new THREE.Shape(), x = -w / 2, y = -h / 2;
+      s.moveTo(x + rad, y); s.lineTo(x + w - rad, y); s.quadraticCurveTo(x + w, y, x + w, y + rad);
+      s.lineTo(x + w, y + h - rad); s.quadraticCurveTo(x + w, y + h, x + w - rad, y + h);
+      s.lineTo(x + rad, y + h); s.quadraticCurveTo(x, y + h, x, y + h - rad);
+      s.lineTo(x, y + rad); s.quadraticCurveTo(x, y, x + rad, y);
+      return s;
+    }
+    var pieceWhite = new THREE.MeshStandardMaterial({ color: 0xf4ecd8, roughness: 0.4, metalness: 0 });
+    function makePiece() {
+      var pick = new THREE.Color().setHSL(Math.random(), 0.55, 0.42);
+      var colMat = new THREE.MeshStandardMaterial({ color: pick, roughness: 0.45, metalness: 0 });
+      var g = new THREE.Group(), D = 0.28, d1 = D * 2 / 3, d2 = D / 3;
+      var front = new THREE.Mesh(new THREE.ExtrudeGeometry(pieceRound(0.5, 0.72, 0.06), { depth: d1, bevelEnabled: false, curveSegments: 3 }), colMat);
+      front.position.z = D / 2 - d1; g.add(front);
+      var back = new THREE.Mesh(new THREE.ExtrudeGeometry(pieceRound(0.5, 0.72, 0.06), { depth: d2, bevelEnabled: false, curveSegments: 3 }), pieceWhite);
+      back.position.z = -D / 2; g.add(back);
+      return g;
+    }
+    function wall(x0, z0, dx, dz, n, rot) { for (var i = 0; i < n; i++) { var m = makePiece(); m.position.set(x0 + dx * i, 0.36, z0 + dz * i); m.rotation.y = rot; sc2.add(m); } }
     wall(-2.75, -4.2, 0.5, 0, 12, 0); wall(-2.75, 4.2, 0.5, 0, 12, Math.PI);
     wall(-5.6, -2.75, 0, 0.5, 12, Math.PI / 2); wall(5.6, -2.75, 0, 0.5, 12, -Math.PI / 2);
     // the people at the table: person 2 opposite, person 3 on the left, person 3 flipped on the right
