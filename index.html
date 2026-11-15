@@ -2255,7 +2255,45 @@ Rack: middle</pre>` },
 <script>
 // Secret: type "mahjong" and a prompt asks if you'd like to play a game; OK opens a wager prompt for fingers.
 (function () {
-  var buf = "", open = null;
+  function openMahjongTable() {
+    if (window.__mjTable) return;
+    var PIXROWS = ['..YYY.................','.YYY...YYYYY..........','.YYY...YYYYY..........','.YYY...YYYYY..........','YY.....YYYYY..........','YY....YYYYYY..........','YYYYYYYYYYY...........','YYYYYYYYYYYY..........','YYYYYYYYYYYY..........','..YYYYYYYYYY..........','......YYYYYY..........','......YYYYYYYYY.......','......YYYYYYYYY.......','......YYYYYYYYY.......','......YYYYYYYYYY......','......YYYYYY.YYYY.....','......YYYYYYY...YY....','......YYYYYYYYY..YYYY.','.....YYYYYYYYYYY.YYYYY','.....YYYY..YYYYYY..YYY','.....YYYY...YYYYY.....','.....YYYY.....YYYYY...','.....YYYY.......YYY...','.....YYY......YYYYY...','....YYYY......YYYY....','...YYYYY.....YYYY.....','...YYYY......YYY......','...YYY......YYY.......','...YYY......YYYY......','...YYY.......YYYY.....','...YYY.......YYYY.....','..YYY.........YYY.....','..YYY.................'];
+    var ov = document.createElement("div"); ov.style.cssText = "position:fixed;inset:0;z-index:5000;background:#0b3d2e;";
+    document.body.appendChild(ov);
+    var rend = new THREE.WebGLRenderer({ antialias: true }); rend.setPixelRatio(Math.min(2, window.devicePixelRatio || 1)); rend.setSize(window.innerWidth, window.innerHeight);
+    ov.appendChild(rend.domElement);
+    var sc2 = new THREE.Scene(); sc2.background = new THREE.Color(0x0b3d2e);
+    var cam2 = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 100);
+    cam2.position.set(3.4, 6.4, 10.5); cam2.lookAt(0, 0.2, -1.2);
+    sc2.add(new THREE.AmbientLight(0xffffff, 0.5));
+    var sweep = new THREE.PointLight(0xffffff, 0.35, 30); sc2.add(sweep);
+    var felt = new THREE.Mesh(new THREE.BoxGeometry(12, 0.4, 9), new THREE.MeshPhongMaterial({ color: 0x2f9a6e, specular: 0x9affd0, shininess: 60 }));
+    felt.position.y = -0.2; sc2.add(felt);
+    var rim = new THREE.Mesh(new THREE.BoxGeometry(12.6, 0.5, 9.6), new THREE.MeshPhongMaterial({ color: 0x3a2412, shininess: 30 }));
+    rim.position.y = -0.45; sc2.add(rim);
+    var tileGeo = new THREE.BoxGeometry(0.5, 0.72, 0.28), tileMat = new THREE.MeshPhongMaterial({ color: 0xf4f4ef, specular: 0xffffff, shininess: 140 });
+    function wall(x0, z0, dx, dz, n, rot) { for (var i = 0; i < n; i++) { var m = new THREE.Mesh(tileGeo, tileMat); m.position.set(x0 + dx * i, 0.36, z0 + dz * i); m.rotation.y = rot; sc2.add(m); } }
+    wall(-2.75, -4.2, 0.5, 0, 12, 0); wall(-2.75, 4.2, 0.5, 0, 12, Math.PI);
+    wall(-5.6, -2.75, 0, 0.5, 12, Math.PI / 2); wall(5.6, -2.75, 0, 0.5, 12, -Math.PI / 2);
+    var pc = document.createElement("canvas"); pc.width = PIXROWS[0].length; pc.height = PIXROWS.length; var pcx = pc.getContext("2d");
+    for (var yy = 0; yy < PIXROWS.length; yy++) for (var xx = 0; xx < PIXROWS[0].length; xx++) { if (PIXROWS[yy].charAt(xx) !== ".") { pcx.fillStyle = "#ffe600"; pcx.fillRect(xx, yy, 1, 1); } }
+    var ptex = new THREE.CanvasTexture(pc); ptex.magFilter = THREE.NearestFilter; ptex.minFilter = THREE.NearestFilter;
+    var opp = new THREE.Sprite(new THREE.SpriteMaterial({ map: ptex, transparent: true, alphaTest: 0.5, depthTest: false }));
+    opp.center.set(0.5, 0); opp.scale.set(1.5 * PIXROWS[0].length / PIXROWS.length, 1.5, 1); opp.position.set(0, 0.0, -5.6);
+    sc2.add(opp);
+    var raf = 0, t0 = performance.now();
+    function frame() {
+      var T = (performance.now() - t0) / 1000;
+      sweep.position.set(6 * Math.cos(T * 0.6), 5, 5 * Math.sin(T * 0.6));
+      rend.render(sc2, cam2);
+      raf = requestAnimationFrame(frame);
+    }
+    frame();
+    function close() { cancelAnimationFrame(raf); rend.dispose(); ov.remove(); window.__mjTable = null; window.removeEventListener("keydown", onKey); }
+    function onKey(e) { if (e.key === "Escape") close(); }
+    window.addEventListener("keydown", onKey);
+    window.__mjTable = { close: close };
+  }  var buf = "", open = null;
   function closeDlg() { if (open) { open.remove(); open = null; } }
   function note(title, body, buttons) {
     closeDlg();
@@ -2270,7 +2308,7 @@ Rack: middle</pre>` },
   }
   function askWager() {
     var d = note("Wager", "How many fingers would you be willing to wager?<br><input type=\"number\" min=\"1\" max=\"10\" value=\"1\" style=\"width:80px;margin-top:8px;font:14px MGPixel, monospace;\">", '<button type="button" class="note-ok" data-a="ok">OK</button><button type="button" class="note-ok" data-a="cancel">Cancel</button>');
-    d.addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; if (b.getAttribute("data-a") === "ok") { var n = parseInt(d.querySelector("input").value, 10); closeDlg(); window.mahjongWager = isNaN(n) ? 1 : Math.max(1, Math.min(10, n)); } else closeDlg(); });
+    d.addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; if (b.getAttribute("data-a") === "ok") { var n = parseInt(d.querySelector("input").value, 10); closeDlg(); window.mahjongWager = isNaN(n) ? 1 : Math.max(1, Math.min(10, n)); openMahjongTable(); } else closeDlg(); });
   }
   window.addEventListener("keydown", function (e) {
     if (e.ctrlKey || e.metaKey || e.altKey || !e.key || e.key.length !== 1) return;
