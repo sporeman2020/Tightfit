@@ -2281,9 +2281,11 @@ Rack: middle</pre>` },
       var swing = ease(T / 4);                                  // rotate into three-point perspective over 4 seconds
       cam2.position.lerpVectors(camStart, camEnd, swing);
       // whose turn it is: the camera turns a little toward the left or right player; the opposite player keeps the view centred
-      var tx = T < 5 ? 0 : (turnSeat(T) === "left" ? -1.6 : turnSeat(T) === "right" ? 1.6 : 0);
-      lookX += (tx - lookX) * 0.04;
-      cam2.lookAt(lookX, 0.3, 3.2);
+      // your turn: look at your own pieces; another player's turn: pan up and look straight at that person
+      var seat = T < 5 ? "player" : turnSeat(T);
+      var tgt = seat === "left" ? [-6.4, 1.6, 0.6] : seat === "right" ? [6.4, 1.6, 0.6] : seat === "middle" ? [0, 1.6, -6.8] : [0, 0.3, 3.2];
+      lookV.x += (tgt[0] - lookV.x) * 0.05; lookV.y += (tgt[1] - lookV.y) * 0.05; lookV.z += (tgt[2] - lookV.z) * 0.05;
+      cam2.lookAt(lookV);
       var fade = ease((T - 1) / 2.5);                           // colour change: lattice to green tiles
       floorMat.opacity = fade; floorMat.roughness = 0.05 + 0.5 * ease((T - 1.5) / 3);   // roughness fades in with the colour change
       spot.position.set(cam2.position.x + 0.4, cam2.position.y + 2.2, cam2.position.z + 0.2);
