@@ -2074,7 +2074,39 @@ Rack: middle</pre>` },
   sPrompt.style.cssText = "position:absolute;left:50%;bottom:72px;transform:translateX(-50%);width:46px;height:46px;border:2px solid #fff;border-radius:12px;display:none;align-items:center;justify-content:center;font:22px MGPixel, monospace;color:#fff;background:transparent;pointer-events:none;z-index:4;";
   sPrompt.textContent = "S";
   wrap.appendChild(sPrompt);
-  function updatePlayer(T) {
+  // the tunnel: the hedron's parts hide, and a sphere of glitching tower pieces rotates around a morphing core
+  var tunnelOn = false, tunnelG = null, tunnelPieces = null, tunnelCore = null, tunnelC = new THREE.Vector3(), tunnelDummy = new THREE.Object3D(), tunnelBase = [], tunnelZero = new THREE.Matrix4().makeScale(0, 0, 0);
+  function startTunnel() {
+    tunnelOn = true; hed.visible = false;
+    tunnelC.copy(hed.position);
+    tunnelG = new THREE.Group(); tunnelG.position.copy(tunnelC); sc.add(tunnelG);
+    var N = 260;
+    tunnelPieces = new THREE.InstancedMesh(new THREE.BoxGeometry(1.4, 0.6, 0.3), new THREE.MeshBasicMaterial({ color: 0xf2d6a0, transparent: true, opacity: 0.85, fog: false }), N);
+    for (var i = 0; i < N; i++) {
+      var u = Math.random() * 2 - 1, th = Math.random() * Math.PI * 2, s2 = Math.sqrt(1 - u * u), R = 22 + Math.random() * 6;
+      tunnelDummy.position.set(R * s2 * Math.cos(th), R * u, R * s2 * Math.sin(th));
+      tunnelDummy.lookAt(0, 0, 0); tunnelDummy.updateMatrix();
+      tunnelBase.push(tunnelDummy.matrix.clone());
+      tunnelPieces.setMatrixAt(i, tunnelDummy.matrix);
+    }
+    tunnelG.add(tunnelPieces);
+    tunnelCore = new THREE.Mesh(new THREE.SphereGeometry(3, 48, 32), new THREE.ShaderMaterial({ uniforms: { uT: { value: 0 } },
+      vertexShader: "uniform float uT; varying vec3 vN; void main() { vN = normal; vec3 p = position + normal * 0.35 * sin(3.0 * position.x + uT * 2.0) * sin(3.0 * position.y - uT * 1.3) * sin(3.0 * position.z + uT * 0.7); gl_Position = projectionMatrix * modelViewMatrix * vec4(p, 1.0); }",
+      fragmentShader: "uniform float uT; varying vec3 vN; void main() { float f = 0.5 + 0.5 * sin(uT * 3.0 + vN.x * 6.0) * cos(uT * 2.0 + vN.y * 6.0); vec3 c = mix(vec3(1.0, 0.45, 0.1), vec3(1.0, 0.95, 0.75), f); gl_FragColor = vec4(c, 1.0); }" }));
+    tunnelG.add(tunnelCore);
+  }
+  function tunnelStep(T) {
+    if (!tunnelOn) return;
+    tunnelG.rotation.y = T * 0.15;
+    tunnelCore.material.uniforms.uT.value = T;
+    tunnelCore.scale.setScalar(1 + 0.1 * Math.sin(T * 1.7));
+    var slot = Math.floor(T * 4);
+    for (var i = 0; i < tunnelBase.length; i++) {
+      var on = Math.abs(Math.sin(i * 12.9898 + slot * 78.233) * 43758.5453 % 1) > 0.35;   // pieces glitch in and out
+      tunnelPieces.setMatrixAt(i, on ? tunnelBase[i] : tunnelZero);
+    }
+    tunnelPieces.instanceMatrix.needsUpdate = true;
+  }  function updatePlayer(T) {
     if (ended) return;
     var dt = pst.last === null ? 0 : Math.min(0.1, T - pst.last); pst.last = T;
     // the halo fades in as the camera gets closer to the hedron
@@ -2082,7 +2114,7 @@ Rack: middle</pre>` },
     var vp = sm((T - 45) / 90);
     if (!pst.final && T > 45) { voidSphere.visible = true; voidSphere.position.copy(hed.position); voidSphere.scale.setScalar(Math.max(0.001, 470 * vp)); setBoard("BOARD: Intrusion/Invasion/Invalid Occupant"); }
     if (kal.on) { kaleidoStep(dt); cam.position.copy(kal.camPos); cam.lookAt(pst.hedWorld); voidSphere.visible = false; sPrompt.style.display = "none"; return; }
-    if (pst.final) { voidSphere.visible = false; sPrompt.style.display = "none"; cam.position.set(0, 6, 30); cam.lookAt(hed.position); return; }
+    if (pst.final) { voidSphere.visible = false; sPrompt.style.display = "none"; if (!tunnelOn) startTunnel(); tunnelStep(T); cam.position.copy(tunnelC); cam.lookAt(tunnelC.x, tunnelC.y, tunnelC.z - 1); return; }
     if (T < 14) return;
     if (!pst.on) { pst.on = true; person.visible = true; pst.x = 0; pst.y = 0; pst.vy = 0; pst.z = 22; pst.hedWorld.copy(hed.position); }
     var fwd = 0, back = (keysDown.ArrowDown || keysDown.s) ? 1 : 0;   // W is disabled for now
