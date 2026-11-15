@@ -953,7 +953,26 @@ Rack: middle</pre>` },
   const startMenu = document.getElementById("startMenu");
   const startList = document.getElementById("startList");
   document.querySelector(".start").addEventListener("click", () => { startMenu.hidden = !startMenu.hidden; });
-  // Closing Tightfit moves it into the Start menu list.
+  // Achievements: shown in the Start menu below the window list
+  const achievements = { "paint-site": { label: "Paint the whole site a single colour", done: false } };
+  function renderAchievements() {
+    let el = document.getElementById("achList");
+    if (!el) { el = document.createElement("ul"); el.id = "achList"; startMenu.appendChild(el); }
+    el.innerHTML = "";
+    Object.values(achievements).forEach(function (a) {
+      const li = document.createElement("li");
+      li.textContent = (a.done ? "[x] " : "[ ] ") + a.label;
+      li.style.cursor = "default";
+      el.appendChild(li);
+    });
+  }
+  function unlockAchievement(id) {
+    if (!achievements[id] || achievements[id].done) return;
+    achievements[id].done = true;
+    renderAchievements();
+  }
+  window.unlockAchievement = unlockAchievement;
+  renderAchievements();  // Closing Tightfit moves it into the Start menu list.
   const videoWin = document.querySelector(".video-win");
   function addStartEntry(label, open) {
     const li = document.createElement("li");
@@ -1767,7 +1786,7 @@ Rack: middle</pre>` },
       swFgEl.style.background = css;
     } else {
       document.documentElement.style.setProperty("--desk", css);
-      swBgEl.style.background = css;
+      swBgEl.style.background = css; if (window.unlockAchievement) window.unlockAchievement("paint-site");
     }
   }
 
