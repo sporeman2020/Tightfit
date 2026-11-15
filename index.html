@@ -2237,7 +2237,7 @@ Rack: middle</pre>` },
       '<div class="row"><button type="button" class="note-ok" data-a="close">OK</button></div>';
     document.body.appendChild(d);
     hideAllTabs(d);
-    d.addEventListener("click", function (e) { if (e.target.closest("button")) close(); });
+    d.addEventListener("click", function (e) { if (e.target.closest("button")) { close(); sunriseNotice(); } });
     open = d;
     sunriseTimer = setTimeout(function () { sunriseTimer = null; if (open) { close(); sunriseNotice(); } }, 120000);
   }
