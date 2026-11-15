@@ -2462,7 +2462,7 @@ Rack: middle</pre>` },
       tableGroup.children.forEach(function (c) {
         if (c.userData.side !== 'west') return;
         if (c.userData.idx < 7) c.position.z -= 0.25;
-        if (c.userData.idx === 2) c.rotation.x += Math.PI;
+        if (c.userData.idx === 3) c.rotation.x += Math.PI;   // the middle stack is the dora indicator, flipped face up
         if (c.userData.idx === 7) c.rotation.y += Math.PI / 2;
       });
     }`n    var pointerLow = false, zoomLerp = 0;`n    function onMove(e) { pointerLow = e.clientY > window.innerHeight * 0.75; }`n    window.addEventListener("mousemove", onMove);
