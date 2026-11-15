@@ -2077,6 +2077,8 @@ Rack: middle</pre>` },
   function updatePlayer(T) {
     if (ended) return;
     var dt = pst.last === null ? 0 : Math.min(0.1, T - pst.last); pst.last = T;
+    // the halo fades in as the camera gets closer to the hedron
+    halo.material.opacity = Math.max(0, Math.min(1, 1 - cam.position.distanceTo(hed.position) / 300));
     var vp = sm((T - 45) / 90);
     if (!pst.final && T > 45) { voidSphere.visible = true; voidSphere.position.copy(hed.position); voidSphere.scale.setScalar(Math.max(0.001, 470 * vp)); setBoard("BOARD: Intrusion/Invasion/Invalid Occupant"); }
     if (kal.on) { kaleidoStep(dt); cam.position.copy(kal.camPos); cam.lookAt(pst.hedWorld); voidSphere.visible = false; sPrompt.style.display = "none"; return; }
