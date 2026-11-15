@@ -2083,20 +2083,15 @@ Rack: middle</pre>` },
     var dx = side * 3.2 * dt, dz = 0;                        // S holds you still; W is disabled for now
     var hw = pst.hedWorld, dist = Math.hypot(hw.x - pst.x, hw.z - pst.z, hw.y - pst.y), prox = Math.max(0, Math.min(1, 1 - dist / 440));
     if (!holdingS) {
-      if (pst.y < hw.y - 2) {
-        pst.y += 3.0 * dt;                                  // rise straight up first
-      } else {
-        var px = hw.x - pst.x, pz = hw.z - pst.z, pl = Math.hypot(px, pz) || 1;
-        dx += px / pl * 2.2 * dt; dz += pz / pl * 2.2 * dt; // then move toward the centre of the hedron
-      }
-    }
-    pst.vy = 0;    if (pst.y <= 0) { pst.y = 0; if (pst.vy < 0) pst.vy = 0; }
+      // walk straight forward into the hedron's halo
+      var px = hw.x - pst.x, pz = hw.z - pst.z, pl = Math.hypot(px, pz) || 1;
+      dx += px / pl * 4.0 * dt; dz += pz / pl * 4.0 * dt;
+    }    pst.vy = 0;    if (pst.y <= 0) { pst.y = 0; if (pst.vy < 0) pst.vy = 0; }
     pst.x += dx; pst.z += dz;
     person.position.set(pst.x, pst.y, pst.z);
     cam.position.set(pst.x, pst.y + 2.6, pst.z + 4.2);
     // the look target moves from the figure toward the hedron as the figure rises
-    var lt = Math.max(0, Math.min(1, pst.y / Math.max(1, hw.y)));
-    cam.lookAt(pst.x + (hw.x - pst.x) * lt, pst.y + 1.3 + (hw.y - pst.y - 1.3) * lt, pst.z + (hw.z - pst.z) * lt);
+    cam.lookAt(hw.x, pst.y + 1.3, hw.z);   // look straight ahead at the hedron
     if (!holdingS && !kal.done && cam.position.distanceTo(pst.hedWorld) < 30) { kal.on = true; kal.t = 0; kal.next = 2; kal.glitches = 0; kal.glitchFrames = 0; kal.camPos = cam.position.clone(); }
     sPrompt.style.display = "flex";
     sPrompt.style.opacity = holdingS ? "1" : String((0.5 + 0.5 * Math.sin(T * 7)).toFixed(2));
