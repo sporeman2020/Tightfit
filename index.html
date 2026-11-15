@@ -2465,7 +2465,10 @@ Rack: middle</pre>` },
         if (c.userData.idx === 3) c.rotation.x += Math.PI;   // the middle stack is the dora indicator, flipped face up
         if (c.userData.idx === 7) c.rotation.y += Math.PI / 2;
       });
-    }`n    var pointerLow = false, zoomLerp = 0;`n    function onMove(e) { pointerLow = e.clientY > window.innerHeight * 0.75; }`n    window.addEventListener("mousemove", onMove);
+    }
+    var pointerLow = false, zoomLerp = 0;
+    function onMove(e) { pointerLow = e.clientY > window.innerHeight * 0.75; }
+    window.addEventListener("mousemove", onMove);
     // once the arrow picks East, the other winds follow in turn order and the wall's start is marked
     var WINDS = ['East', 'South', 'West', 'North'];
     var wallStarts = [[4.21, 4.15], [4.15, -3.6], [-4.21, -4.15], [-4.15, 3.6]];
@@ -2493,7 +2496,10 @@ Rack: middle</pre>` },
       }
       if (arrowDone && T > 4.5) { if (!westSet) { westSet = true; setupWestWall(); } tableGroup.visible = true; }
       var swing = ease(T / 4);                                  // rotate into three-point perspective over 4 seconds
-      cam2.position.lerpVectors(camStart, camEnd, swing);`n      // pointer near the bottom of the page zooms in on your tiles`n      zoomLerp += ((pointerLow ? 1 : 0) - zoomLerp) * 0.06;`n      cam2.position.lerp(new THREE.Vector3(0, 3.4, 7.4), zoomLerp * 0.85);
+      cam2.position.lerpVectors(camStart, camEnd, swing);
+      // pointer near the bottom of the page zooms in on your tiles
+      zoomLerp += ((pointerLow ? 1 : 0) - zoomLerp) * 0.06;
+      cam2.position.lerp(new THREE.Vector3(0, 3.4, 7.4), zoomLerp * 0.85);
       // whose turn it is: the camera turns a little toward the left or right player; the opposite player keeps the view centred
       // your turn: look at your own pieces; another player's turn: pan up and look straight at that person
       var seat = T < 5 ? "player" : turnSeat(T);
