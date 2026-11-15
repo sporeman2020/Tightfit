@@ -2043,34 +2043,47 @@ Rack: middle</pre>` },
   })();
   // the character: a small pixel figure drawn cell by cell (14 x 20), shown as a sprite that stands on its feet
   var PIX = [
-    '....KKKKKK....',
-    '...KHHHHHHK...',
-    '..KHHHHHHHHK..',
-    '..KHSSSSSSHK..',
-    '..KSSSSSSSSK..',
-    '..KSEESSEESK..',
-    '..KSSSSSSSSK..',
-    '...KSSSSSSK...',
-    '..KTTTTTTTTK..',
-    '.KSTTTTTTTTSK.',
-    '.KSTTTTTTTTSK.',
-    '.KSTTTTTTTTSK.',
-    '..KKTTTTTTKK..',
-    '...KTPPPPTK...',
-    '...KPPPPPPK...',
-    '...KPPPPPPK...',
-    '...KPPKKPPK...',
-    '...KPPK..KPPK.',
-    '...KBBK..KBBK.',
-    '..KBBBK..KBBBK'
+    '..YYY.................',
+    '.YYY...YYYYY..........',
+    '.YYY...YYYYY..........',
+    '.YYY...YYYYY..........',
+    'YY.....YYYYY..........',
+    'YY....YYYYYY..........',
+    'YYYYYYYYYYY...........',
+    'YYYYYYYYYYYY..........',
+    'YYYYYYYYYYYY..........',
+    '..YYYYYYYYYY..........',
+    '......YYYYYY..........',
+    '......YYYYYYYYY.......',
+    '......YYYYYYYYY.......',
+    '......YYYYYYYYY.......',
+    '......YYYYYYYYYY......',
+    '......YYYYYY.YYYY.....',
+    '......YYYYYYY...YY....',
+    '......YYYYYYYYY..YYYY.',
+    '.....YYYYYYYYYYY.YYYYY',
+    '.....YYYY..YYYYYY..YYY',
+    '.....YYYY...YYYYY.....',
+    '.....YYYY.....YYYYY...',
+    '.....YYYY.......YYY...',
+    '.....YYY......YYYYY...',
+    '....YYYY......YYYY....',
+    '...YYYYY.....YYYY.....',
+    '...YYYY......YYY......',
+    '...YYY......YYY.......',
+    '...YYY......YYYY......',
+    '...YYY.......YYYY.....',
+    '...YYY.......YYYY.....',
+    '..YYY.........YYY.....',
+    '..YYY.................'
   ];
-  var PAL = { K: "#151015", H: "#4a3320", S: "#f2c9a0", E: "#151015", T: "#b8413a", P: "#2e3350", B: "#151015" };
-  var pixCanvas = document.createElement("canvas"); pixCanvas.width = 14; pixCanvas.height = 20;
+  var PAL = { Y: "#ffe600" };
+  var PIXW = PIX[0].length, PIXH = PIX.length;
+  var pixCanvas = document.createElement("canvas"); pixCanvas.width = PIXW; pixCanvas.height = PIXH;
   var pxc = pixCanvas.getContext("2d");
-  for (var py_ = 0; py_ < 20; py_++) for (var px_ = 0; px_ < 14; px_++) { var ch_ = PIX[py_].charAt(px_); if (ch_ !== ".") { pxc.fillStyle = PAL[ch_]; pxc.fillRect(px_, py_, 1, 1); } }
-  var pixTex = new THREE.CanvasTexture(pixCanvas); pixTex.magFilter = THREE.NearestFilter; pixTex.minFilter = THREE.NearestFilter;
+  for (var py_ = 0; py_ < PIXH; py_++) for (var px_ = 0; px_ < PIXW; px_++) { var ch_ = PIX[py_].charAt(px_); if (ch_ !== ".") { pxc.fillStyle = PAL[ch_]; pxc.fillRect(px_, py_, 1, 1); } }  var pixTex = new THREE.CanvasTexture(pixCanvas); pixTex.magFilter = THREE.NearestFilter; pixTex.minFilter = THREE.NearestFilter;
   var person = new THREE.Sprite(new THREE.SpriteMaterial({ map: pixTex, transparent: true, alphaTest: 0.5, fog: false, depthTest: false }));
-  person.center.set(0.5, 0); person.scale.set(1.26, 1.8, 1); person.visible = false; sc.add(person);
+  person.center.set(0.5, 0); person.scale.set(1.8 * PIXW / PIXH, 1.8, 1); person.visible = false; sc.add(person);
   var voidMat = new THREE.MeshBasicMaterial({ color: 0xff6fb4, side: THREE.BackSide, alphaMap: ditherTex.clone(), alphaTest: 0.5, fog: false });
   voidMat.alphaMap.repeat.set(24, 24);
   var voidSphere = new THREE.Mesh(new THREE.SphereGeometry(1, 48, 32), voidMat); voidSphere.visible = false; sc.add(voidSphere);   // grows from the hedron until it encloses the camera
