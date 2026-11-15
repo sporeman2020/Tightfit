@@ -2061,14 +2061,14 @@ Rack: middle</pre>` },
   var kal = { on: false, done: false, t: 0, next: 2, glitches: 0, glitchFrames: 0, camPos: null };
   function kaleidoStep(dt) {                                                                           // rotate, sink, kaleidoscope; then glitch back a few frames, three times
     kal.t += dt;
-    var d = Math.min(1, kal.t / 5), rot = kal.t * 240, jx = 0, jy = 0;
+    var d = Math.min(1, kal.t / 5), rot = kal.t * 480, jx = 0, jy = 0, mir = (Math.floor(kal.t * 8) % 2) ? -1 : 1;
     if (kal.glitchFrames > 0) { kal.glitchFrames--; jx = (Math.random() - 0.5) * 60; jy = (Math.random() - 0.5) * 20; }
-    wrap.style.transform = "translate(" + jx.toFixed(1) + "px," + (d * 100 + jy).toFixed(1) + "vh) rotate(" + rot.toFixed(1) + "deg) scale(" + (1 + 0.6 * d).toFixed(3) + ")";
-    wrap.style.filter = "hue-rotate(" + (kal.t * 220).toFixed(0) + "deg) saturate(1.8)";
+    wrap.style.transform = "translate(" + jx.toFixed(1) + "px," + (d * 100 + jy).toFixed(1) + "vh) rotate(" + rot.toFixed(1) + "deg) scaleX(" + mir + ") scale(" + (1 + 1.2 * d).toFixed(3) + ")";
+    wrap.style.filter = "hue-rotate(" + (kal.t * 360).toFixed(0) + "deg) saturate(3) contrast(1.8)";
     if (kal.glitches < 3 && kal.t > kal.next && kal.t > 2) {
       kal.glitches++; kal.t -= 0.0167 * (2 + Math.floor(Math.random() * 4)); kal.glitchFrames = 3; kal.next = kal.t + 0.9;
     }
-    if (kal.t > 5.6) { kal.done = true; kal.on = false; wrap.style.transform = ""; wrap.style.filter = ""; pst.final = true; lightsOff = true; person.visible = false; setBoard("BOARD: Fear/Allowance/Grip"); }
+    if (kal.t > 8) { kal.done = true; kal.on = false; wrap.style.transform = ""; wrap.style.filter = ""; pst.final = true; lightsOff = true; person.visible = false; setBoard("BOARD: Fear/Allowance/Grip"); }
   }
   var sPrompt = document.createElement("div");
   sPrompt.style.cssText = "position:absolute;left:50%;bottom:72px;transform:translateX(-50%);width:46px;height:46px;border:2px solid #fff;border-radius:12px;display:none;align-items:center;justify-content:center;font:22px MGPixel, monospace;color:#fff;background:transparent;pointer-events:none;z-index:4;";
