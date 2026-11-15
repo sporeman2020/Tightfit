@@ -2216,10 +2216,64 @@ Rack: middle</pre>` },
 (function () {
   function openMahjongTable() {
     if (window.__mjTable) return;
+    var ov = document.createElement("div"); ov.style.cssText = "position:fixed;inset:0;z-index:5000;background:#040705;";
+    document.body.appendChild(ov);
+    var rend = new THREE.WebGLRenderer({ antialias: true }); rend.setPixelRatio(Math.min(2, window.devicePixelRatio || 1)); rend.setSize(window.innerWidth, window.innerHeight);
+    ov.appendChild(rend.domElement);
+    var sc2 = new THREE.Scene(); sc2.background = new THREE.Color(0x040705);
+    var cam2 = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 100);
+    var camStart = new THREE.Vector3(0, 9.5, 12), camEnd = new THREE.Vector3(3.4, 6.4, 10.5);
+    cam2.position.copy(camStart); cam2.lookAt(0, 0, 0);
+    sc2.add(new THREE.AmbientLight(0xffffff, 0.06));
+    // spotlight just above the camera, aimed at the table, so the room stays dark around it
+    var spot = new THREE.SpotLight(0xfff1dc, 2.6, 40, 0.42, 0.55, 1.2);
+    spot.target.position.set(0, 0, 0); sc2.add(spot); sc2.add(spot.target);
+    var sweep = new THREE.PointLight(0xffffff, 0.25, 20); sc2.add(sweep);
+    // lattice colour under the glossy green tiles
+    var seed = 7; function rnd() { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
+    function brickCanvas(mode) {
+      var c = document.createElement("canvas"); c.width = c.height = 1024; var x = c.getContext("2d");
+      x.fillStyle = mode === "rough" ? "#ffffff" : "#b8bcb6"; x.fillRect(0, 0, 1024, 1024);
+      var rowH = 128, brickW = 384;
+      for (var r = 0; r < 8; r++) {
+        var off = (r % 2) ? brickW / 2 : 0;
+        for (var k = -1; k < 4; k++) {
+          var bx = k * brickW + off, by = r * rowH, v = rnd();
+          if (mode === "rough") { var gv = Math.round(30 + 60 * v); x.fillStyle = "rgb(" + gv + "," + gv + "," + gv + ")"; }
+          else { x.fillStyle = "rgb(" + Math.round(16 + 26 * v) + "," + Math.round(88 + 44 * v) + "," + Math.round(52 + 26 * v) + ")"; }
+          x.fillRect(bx + 5, by + 5, brickW - 10, rowH - 10);
+          if (mode !== "rough") {
+            var gr = x.createLinearGradient(bx, by, bx, by + rowH);
+            gr.addColorStop(0, "rgba(255,255,255,0.20)"); gr.addColorStop(0.45, "rgba(255,255,255,0)"); gr.addColorStop(1, "rgba(0,0,0,0.14)");
+            x.fillStyle = gr; x.fillRect(bx + 5, by + 5, brickW - 10, rowH - 10);
+          }
+        }
+      }
+      return c;
+    }
+    var colTex = new THREE.CanvasTexture(brickCanvas("color")); colTex.wrapS = colTex.wrapT = THREE.RepeatWrapping; colTex.repeat.set(3, 2.25); colTex.anisotropy = 4;
+    var rouTex = new THREE.CanvasTexture(brickCanvas("rough")); rouTex.wrapS = rouTex.wrapT = THREE.RepeatWrapping; rouTex.repeat.set(3, 2.25);
+    // the lattice (original colour) sits underneath and fades out as the tiles fade in
+    var lattice = new THREE.Mesh(new THREE.PlaneGeometry(12, 9), new THREE.MeshStandardMaterial({ color: 0xd8c7a0, roughness: 0.9 }));
+    lattice.rotation.x = -Math.PI / 2; lattice.position.y = -0.01; sc2.add(lattice);
+    var floorMat = new THREE.MeshStandardMaterial({ map: colTex, roughnessMap: rouTex, roughness: 0.05, metalness: 0, transparent: true, opacity: 0 });
+    var floor = new THREE.Mesh(new THREE.PlaneGeometry(12, 9), floorMat);
+    floor.rotation.x = -Math.PI / 2; sc2.add(floor);
+    var tileGeo = new THREE.BoxGeometry(0.5, 0.72, 0.28), tileMat = new THREE.MeshStandardMaterial({ color: 0xf4f4ef, roughness: 0.25, metalness: 0 });
+    function wall(x0, z0, dx, dz, n, rot) { for (var i = 0; i < n; i++) { var m = new THREE.Mesh(tileGeo, tileMat); m.position.set(x0 + dx * i, 0.36, z0 + dz * i); m.rotation.y = rot; sc2.add(m); } }
+    wall(-2.75, -4.2, 0.5, 0, 12, 0); wall(-2.75, 4.2, 0.5, 0, 12, Math.PI);
+    wall(-5.6, -2.75, 0, 0.5, 12, Math.PI / 2); wall(5.6, -2.75, 0, 0.5, 12, -Math.PI / 2);
     var raf = 0, t0 = performance.now();
+    function ease(x) { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); }
     function frame() {
       var T = (performance.now() - t0) / 1000;
-      sweep.position.set(6 * Math.cos(T * 0.6), 5, 5 * Math.sin(T * 0.6));
+      var swing = ease(T / 4);                                  // rotate into three-point perspective over 4 seconds
+      cam2.position.lerpVectors(camStart, camEnd, swing);
+      cam2.lookAt(0, 0, 0);
+      var fade = ease((T - 1) / 2.5);                           // colour change: lattice to green tiles
+      floorMat.opacity = fade; floorMat.roughness = 0.05 + 0.5 * ease((T - 1.5) / 3);   // roughness fades in with the colour change
+      spot.position.set(cam2.position.x + 0.4, cam2.position.y + 2.2, cam2.position.z + 0.2);
+      sweep.position.set(6 * Math.cos(T * 0.5), 5, 5 * Math.sin(T * 0.5));
       rend.render(sc2, cam2);
       raf = requestAnimationFrame(frame);
     }
