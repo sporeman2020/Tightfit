@@ -2077,11 +2077,11 @@ Rack: middle</pre>` },
     '..YYY.........YYY.....',
     '..YYY.................'
   ];
-  var PAL = { Y: "#ffe600" };
+  var SPAL = { Y: "#ffe600" };
   var PIXW = PIX[0].length, PIXH = PIX.length;
   var pixCanvas = document.createElement("canvas"); pixCanvas.width = PIXW; pixCanvas.height = PIXH;
   var pxc = pixCanvas.getContext("2d");
-  for (var py_ = 0; py_ < PIXH; py_++) for (var px_ = 0; px_ < PIXW; px_++) { var ch_ = PIX[py_].charAt(px_); if (ch_ !== ".") { pxc.fillStyle = PAL[ch_]; pxc.fillRect(px_, py_, 1, 1); } }  var pixTex = new THREE.CanvasTexture(pixCanvas); pixTex.magFilter = THREE.NearestFilter; pixTex.minFilter = THREE.NearestFilter;
+  for (var py_ = 0; py_ < PIXH; py_++) for (var px_ = 0; px_ < PIXW; px_++) { var ch_ = PIX[py_].charAt(px_); if (ch_ !== ".") { pxc.fillStyle = SPAL[ch_]; pxc.fillRect(px_, py_, 1, 1); } }  var pixTex = new THREE.CanvasTexture(pixCanvas); pixTex.magFilter = THREE.NearestFilter; pixTex.minFilter = THREE.NearestFilter;
   var person = new THREE.Sprite(new THREE.SpriteMaterial({ map: pixTex, transparent: true, alphaTest: 0.5, fog: false, depthTest: false }));
   person.center.set(0.5, 0); person.scale.set(1.8 * PIXW / PIXH, 1.8, 1); person.visible = false; sc.add(person);
   var voidMat = new THREE.MeshBasicMaterial({ color: 0xff6fb4, side: THREE.BackSide, alphaMap: ditherTex.clone(), alphaTest: 0.5, fog: false });
