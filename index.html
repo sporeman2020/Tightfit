@@ -2283,7 +2283,9 @@ Rack: middle</pre>` },
     requestAnimationFrame(function () { ov.style.opacity = "1"; });
     var rend = new THREE.WebGLRenderer({ antialias: true }); rend.setPixelRatio(Math.min(2, window.devicePixelRatio || 1)); rend.setSize(window.innerWidth, window.innerHeight);
     ov.appendChild(rend.domElement);
-    var sc2 = new THREE.Scene(); sc2.background = new THREE.Color(0x000000);
+    // every piece and opponent lives in tableGroup, which stays hidden until the arrow picks the starting player
+    var tableGroup = new THREE.Group(); tableGroup.visible = false;
+    var sc2 = new THREE.Scene(); sc2.add(tableGroup); sc2.background = new THREE.Color(0x000000);
     var cam2 = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 100);
     var camStart = new THREE.Vector3(0, 9.5, 12), camEnd = new THREE.Vector3(0, 4.4, 9.4);
     cam2.position.copy(camStart); cam2.lookAt(0, 0, 0);
@@ -2392,6 +2394,7 @@ Rack: middle</pre>` },
     var jadeTex = new THREE.TextureLoader().load(JADE_IMG);
     var JADE_W = 1600, JADE_H = 900, JADE_CELL_W = 71.62, JADE_CELL_H = 100.27, JADE_ORIGIN_X = 48.0, JADE_ORIGIN_Y = 48.93, JADE_COLS = 21;
     var tableHue = Math.random();   // a random colour each load, tinting the jade pattern and the floor
+    var jadeMat = new THREE.MeshStandardMaterial({ map: jadeTex, color: new THREE.Color().setHSL(tableHue, 0.6, 0.6), roughness: 0.45, metalness: 0 });
     var pieceCounter = 0;
     function cellUV(geo, i) {
       var c = i % JADE_COLS, r = Math.floor(i / JADE_COLS);
@@ -2416,9 +2419,9 @@ Rack: middle</pre>` },
         var m = makePiece(); m.scale.set(Math.max(Math.abs(dx), Math.abs(dz)) * 0.9 / 0.5, 0.765, 0.765);
         m.rotation.order = "YXZ"; m.rotation.x = -Math.PI / 2; m.rotation.y = yaw;
         m.position.set(x0 + dx * i * 0.9, 0.107 + k * 0.214, z0 + dz * i * 0.9);
-        sc2.add(m);
+        tableGroup.add(m);
       }
-    }    function wall(x0, z0, dx, dz, n, rot, flip) { if (flip === undefined) flip = true; for (var i = 0; i < n; i++) { var m = makePiece(); m.scale.set(Math.max(Math.abs(dx), Math.abs(dz)) * 0.9 / 0.5, 0.765, 0.765); m.position.set(x0 + dx * i * 0.9, 0.2754, z0 + dz * i * 0.9); m.rotation.y = rot + (flip ? Math.PI : 0); sc2.add(m); } }
+    }    function wall(x0, z0, dx, dz, n, rot, flip) { if (flip === undefined) flip = true; for (var i = 0; i < n; i++) { var m = makePiece(); m.scale.set(Math.max(Math.abs(dx), Math.abs(dz)) * 0.9 / 0.5, 0.765, 0.765); m.position.set(x0 + dx * i * 0.9, 0.2754, z0 + dz * i * 0.9); m.rotation.y = rot + (flip ? Math.PI : 0); tableGroup.add(m); } }
     // wall stacks: 17 across, two high, on each side
     wallStack(-4.21, -4.15, 0.585, 0, 17, 0, 1.17);
     wallStack(4.21, 4.15, -0.585, 0, 17, Math.PI, 1.17);
@@ -2435,7 +2438,7 @@ Rack: middle</pre>` },
     function seatPerson(src, x, z, h, w, y, ry) {
       var mat = new THREE.MeshBasicMaterial({ map: new THREE.TextureLoader().load(src), transparent: true, opacity: 0, depthTest: true, side: THREE.DoubleSide }); seatMats.push(mat);
       var pl = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
-      pl.position.set(x, y + h / 2, z); pl.rotation.y = ry; pl.renderOrder = 10; sc2.add(pl);
+      pl.position.set(x, y + h / 2, z); pl.rotation.y = ry; pl.renderOrder = 10; tableGroup.add(pl);
     }
     seatPerson(SIL.p2, 0, -7.4, 3.3, 2.0, -0.6, 0.15);
     seatPerson(SIL.p3f, -7.0, 0.6, 3.3, 1.75, -0.6, 1.2);
@@ -2443,9 +2446,27 @@ Rack: middle</pre>` },
     var turnOrder = ["player", "left", "middle", "right"], lookV = new THREE.Vector3(0, 0.3, 3.2);
     function turnSeat(T) { return turnOrder[Math.floor((T - 5) / 5) % turnOrder.length]; }
     var raf = 0, t0 = performance.now();
+    // the arrow floats above the table and spins to choose the starting player; the pieces appear after it settles
+    var startSeats = [[0, 1], [1, 0], [0, -1], [-1, 0]], startNames = ['South (you)', 'East', 'North', 'West'];
+    var starter = Math.floor(Math.random() * 4);
+    var arrowGroup = new THREE.Group(); arrowGroup.position.set(0, 2.2, 0); sc2.add(arrowGroup);
+    var arrowMat = new THREE.MeshStandardMaterial({ color: 0xffd27a, emissive: 0x7a4a10, emissiveIntensity: 0.8, roughness: 0.3 });
+    var shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 1.0, 12), arrowMat); shaft.rotation.z = -Math.PI / 2; shaft.position.x = -0.1; arrowGroup.add(shaft);
+    var head = new THREE.Mesh(new THREE.ConeGeometry(0.28, 0.5, 16), arrowMat); head.rotation.z = -Math.PI / 2; head.position.x = 0.5; arrowGroup.add(head);
+    var startLbl = document.createElement("div");
+    startLbl.style.cssText = "position:absolute;left:0;right:0;top:14%;text-align:center;font:20px MGPixel, monospace;color:#fff;letter-spacing:.06em;opacity:0;transition:opacity .6s;pointer-events:none;";
+    ov.appendChild(startLbl);
+    var arrowDone = false;
     function ease(x) { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); }
     function frame() {
       var T = (performance.now() - t0) / 1000;
+      if (!arrowDone) {
+        var at = Math.min(1, T / 4), eo = 1 - Math.pow(1 - at, 3);
+        var dd = startSeats[starter], thetaT = Math.atan2(-dd[1], dd[0]);
+        arrowGroup.rotation.y = (thetaT + 12 * Math.PI) * eo;
+        if (at >= 1) { arrowDone = true; startLbl.textContent = startNames[starter] + ' starts'; startLbl.style.opacity = '1'; }
+      }
+      if (arrowDone && T > 4.5) tableGroup.visible = true;
       var swing = ease(T / 4);                                  // rotate into three-point perspective over 4 seconds
       cam2.position.lerpVectors(camStart, camEnd, swing);
       // whose turn it is: the camera turns a little toward the left or right player; the opposite player keeps the view centred
