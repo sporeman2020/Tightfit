@@ -2259,8 +2259,8 @@ Rack: middle</pre>` },
   function closeDlg() { if (open) { open.remove(); open = null; } }
   function note(title, body, buttons) {
     closeDlg();
-    var d = document.createElement("div"); d.className = "note mahjong-dialog";
-    d.style.cssText = "position:fixed;left:50%;top:40%;width:300px;transform:translate(-50%,-50%);z-index:4500;cursor:default;";
+    var d = document.createElement("div"); d.className = "note sunrise-dialog mahjong-dialog";
+    d.style.cssText = "z-index:4500;cursor:default;";
     d.innerHTML = '<div class="note-title"><span>' + title + '</span><span></span></div><div class="note-body">' + body + '</div><div class="row">' + buttons + '</div>';
     document.body.appendChild(d); open = d; return d;
   }
