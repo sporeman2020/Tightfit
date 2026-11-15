@@ -2417,7 +2417,7 @@ Rack: middle</pre>` },
     function wallStack(x0, z0, dx, dz, n, yaw, sx) { if (sx === undefined) sx = 1;
       for (var i = 0; i < n; i++) for (var k = 0; k < 2; k++) {
         var m = makePiece(); m.scale.set(Math.max(Math.abs(dx), Math.abs(dz)) * 0.9 / 0.5, 0.765, 0.765);
-        m.rotation.order = "YXZ"; m.rotation.x = -Math.PI / 2; m.rotation.y = yaw;
+        m.rotation.order = "YXZ"; m.rotation.x = -Math.PI / 2; m.rotation.y = yaw; m.userData.side = (yaw === Math.PI / 2) ? 'west' : 'other'; m.userData.idx = i;
         m.position.set(x0 + dx * i * 0.9, 0.107 + k * 0.214, z0 + dz * i * 0.9);
         tableGroup.add(m);
       }
@@ -2456,7 +2456,16 @@ Rack: middle</pre>` },
     var startLbl = document.createElement("div");
     startLbl.style.cssText = "position:absolute;left:0;right:0;top:14%;text-align:center;font:20px MGPixel, monospace;color:#fff;letter-spacing:.06em;opacity:0;transition:opacity .6s;pointer-events:none;";
     ov.appendChild(startLbl);
-    var arrowDone = false;`n    var pointerLow = false, zoomLerp = 0;`n    function onMove(e) { pointerLow = e.clientY > window.innerHeight * 0.75; }`n    window.addEventListener("mousemove", onMove);
+    var arrowDone = false, westSet = false;
+    // the west wall (opposite East): seven stacks shift toward the top-left, the third is flipped, the eighth faces long
+    function setupWestWall() {
+      tableGroup.children.forEach(function (c) {
+        if (c.userData.side !== 'west') return;
+        if (c.userData.idx < 7) c.position.z -= 0.25;
+        if (c.userData.idx === 2) c.rotation.x += Math.PI;
+        if (c.userData.idx === 7) c.rotation.y += Math.PI / 2;
+      });
+    }`n    var pointerLow = false, zoomLerp = 0;`n    function onMove(e) { pointerLow = e.clientY > window.innerHeight * 0.75; }`n    window.addEventListener("mousemove", onMove);
     // once the arrow picks East, the other winds follow in turn order and the wall's start is marked
     var WINDS = ['East', 'South', 'West', 'North'];
     var wallStarts = [[4.21, 4.15], [4.15, -3.6], [-4.21, -4.15], [-4.15, 3.6]];
@@ -2482,7 +2491,7 @@ Rack: middle</pre>` },
         arrowGroup.rotation.y = (thetaT + 12 * Math.PI) * eo;
         if (at >= 1) { arrowDone = true; startLbl.textContent = startNames[starter] + ' is East'; startLbl.style.opacity = '1'; setupWinds(); }
       }
-      if (arrowDone && T > 4.5) tableGroup.visible = true;
+      if (arrowDone && T > 4.5) { if (!westSet) { westSet = true; setupWestWall(); } tableGroup.visible = true; }
       var swing = ease(T / 4);                                  // rotate into three-point perspective over 4 seconds
       cam2.position.lerpVectors(camStart, camEnd, swing);`n      // pointer near the bottom of the page zooms in on your tiles`n      zoomLerp += ((pointerLow ? 1 : 0) - zoomLerp) * 0.06;`n      cam2.position.lerp(new THREE.Vector3(0, 3.4, 7.4), zoomLerp * 0.85);
       // whose turn it is: the camera turns a little toward the left or right player; the opposite player keeps the view centred
