@@ -2232,7 +2232,7 @@ Rack: middle</pre>` },
     cam2.position.copy(camStart); cam2.lookAt(0, 0, 0);
     sc2.add(new THREE.AmbientLight(0xffffff, 0.06));
     // spotlight just above the camera, aimed at the table, so the room stays dark around it
-    var spot = new THREE.SpotLight(0xfff1dc, 2.6, 40, 0.42, 0.55, 1.2);
+    var spot = new THREE.SpotLight(0xffa860, 3.2, 40, 0.5, 0.35, 1.2);
     spot.target.position.set(0, 0, 0); sc2.add(spot); sc2.add(spot.target);
     var sweep = new THREE.PointLight(0xffffff, 0.25, 20); sc2.add(sweep);
     // lattice colour under the glossy green tiles
@@ -2377,7 +2377,7 @@ Rack: middle</pre>` },
       cam2.lookAt(lookV);
       var fade = ease((T - 1) / 2.5);                           // colour change: lattice to green tiles
       seatMats.forEach(function (m) { m.opacity = 0.2 * ease((T - 5.5) / 1.5); }); floorMat.roughness = 0.05 + 0.5 * ease((T - 1.5) / 3);   // roughness fades in with the colour change
-      spot.position.set(cam2.position.x + 0.4, cam2.position.y + 2.2, cam2.position.z + 0.2);
+      spot.position.set(0, 9, 0.5);
       sweep.position.set(6 * Math.cos(T * 0.5), 5, 5 * Math.sin(T * 0.5));
       rend.render(sc2, cam2);
       raf = requestAnimationFrame(frame);
