@@ -2287,7 +2287,7 @@ Rack: middle</pre>` },
     var tableGroup = new THREE.Group(); tableGroup.visible = false;
     var sc2 = new THREE.Scene(); sc2.add(tableGroup); sc2.background = new THREE.Color(0x000000);
     var cam2 = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 100);
-    var camStart = new THREE.Vector3(0, 9.5, 12), camEnd = new THREE.Vector3(0, 4.4, 9.4);
+    var camStart = new THREE.Vector3(0, 11.5, 14), camEnd = new THREE.Vector3(0, 5.2, 11.2);   // pulled back a little
     cam2.position.copy(camStart); cam2.lookAt(0, 0, 0);
     sc2.add(new THREE.AmbientLight(0xffffff, 0.06));
     // spotlight just above the camera, aimed at the table, so the room stays dark around it
@@ -2456,7 +2456,23 @@ Rack: middle</pre>` },
     var startLbl = document.createElement("div");
     startLbl.style.cssText = "position:absolute;left:0;right:0;top:14%;text-align:center;font:20px MGPixel, monospace;color:#fff;letter-spacing:.06em;opacity:0;transition:opacity .6s;pointer-events:none;";
     ov.appendChild(startLbl);
-    var arrowDone = false;
+    var arrowDone = false;`n    var pointerLow = false, zoomLerp = 0;`n    function onMove(e) { pointerLow = e.clientY > window.innerHeight * 0.75; }`n    window.addEventListener("mousemove", onMove);
+    // once the arrow picks East, the other winds follow in turn order and the wall's start is marked
+    var WINDS = ['East', 'South', 'West', 'North'];
+    var wallStarts = [[4.21, 4.15], [4.15, -3.6], [-4.21, -4.15], [-4.15, 3.6]];
+    function setupWinds() {
+      var panel = document.createElement("div");
+      panel.style.cssText = "position:absolute;left:16px;bottom:16px;font:16px MGPixel, monospace;color:#fff;line-height:1.7;pointer-events:none;background:rgba(0,0,0,.45);padding:8px 12px;";
+      for (var s = 0; s < 4; s++) {
+        var row = document.createElement("div");
+        row.textContent = startNames[s] + ': ' + WINDS[(s - starter + 4) % 4];
+        panel.appendChild(row);
+      }
+      ov.appendChild(panel);
+      var mk = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.12, 0.5), new THREE.MeshStandardMaterial({ color: 0xffd27a, emissive: 0x7a4a10, emissiveIntensity: 0.9, roughness: 0.3 }));
+      mk.position.set(wallStarts[starter][0], 0.95, wallStarts[starter][1]);
+      tableGroup.add(mk);
+    }
     function ease(x) { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); }
     function frame() {
       var T = (performance.now() - t0) / 1000;
@@ -2464,11 +2480,11 @@ Rack: middle</pre>` },
         var at = Math.min(1, T / 4), eo = 1 - Math.pow(1 - at, 3);
         var dd = startSeats[starter], thetaT = Math.atan2(-dd[1], dd[0]);
         arrowGroup.rotation.y = (thetaT + 12 * Math.PI) * eo;
-        if (at >= 1) { arrowDone = true; startLbl.textContent = startNames[starter] + ' starts'; startLbl.style.opacity = '1'; }
+        if (at >= 1) { arrowDone = true; startLbl.textContent = startNames[starter] + ' is East'; startLbl.style.opacity = '1'; setupWinds(); }
       }
       if (arrowDone && T > 4.5) tableGroup.visible = true;
       var swing = ease(T / 4);                                  // rotate into three-point perspective over 4 seconds
-      cam2.position.lerpVectors(camStart, camEnd, swing);
+      cam2.position.lerpVectors(camStart, camEnd, swing);`n      // pointer near the bottom of the page zooms in on your tiles`n      zoomLerp += ((pointerLow ? 1 : 0) - zoomLerp) * 0.06;`n      cam2.position.lerp(new THREE.Vector3(0, 3.4, 7.4), zoomLerp * 0.85);
       // whose turn it is: the camera turns a little toward the left or right player; the opposite player keeps the view centred
       // your turn: look at your own pieces; another player's turn: pan up and look straight at that person
       var seat = T < 5 ? "player" : turnSeat(T);
@@ -2483,7 +2499,7 @@ Rack: middle</pre>` },
       raf = requestAnimationFrame(frame);
     }
     frame();
-    function close() { cancelAnimationFrame(raf); rend.dispose(); ov.remove(); window.__mjTable = null; window.removeEventListener("keydown", onKey); deskEls.forEach(function (el) { el.style.opacity = ""; el.style.transition = ""; }); document.body.style.backgroundColor = oldBg; }
+    function close() { cancelAnimationFrame(raf); window.removeEventListener("mousemove", onMove); rend.dispose(); ov.remove(); window.__mjTable = null; window.removeEventListener("keydown", onKey); deskEls.forEach(function (el) { el.style.opacity = ""; el.style.transition = ""; }); document.body.style.backgroundColor = oldBg; }
     function onKey(e) { if (e.key === "Escape") close(); }
     window.addEventListener("keydown", onKey);
     window.__mjTable = { close: close };
