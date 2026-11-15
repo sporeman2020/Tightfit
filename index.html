@@ -2326,7 +2326,7 @@ Rack: middle</pre>` },
     var shadeMat = new THREE.MeshStandardMaterial({ color: 0x1f7a4d, emissive: 0x1a6b3f, emissiveIntensity: 0.6, roughness: 0.2, transparent: true, opacity: 0.92, side: THREE.DoubleSide });
     var shade = new THREE.Mesh(new THREE.LatheGeometry(shadeProfile, 32), shadeMat); shade.position.set(0, 8.2, 0); sc2.add(shade);
     var chain = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 8, 6), new THREE.MeshStandardMaterial({ color: 0x2a2218, roughness: 0.5 })); chain.position.set(0, 12.2, 0); sc2.add(chain);
-    var lampLight = new THREE.PointLight(0x3cc98a, 1.5, 22); lampLight.position.set(0, 7.9, 0); sc2.add(lampLight);    var RW = 15, RFLOOR = -7.5, RTOP = 8, RRAIL = -1.4;
+    var lampLight = new THREE.PointLight(0x3cc98a, 1.5, 22); lampLight.position.set(0, 7.9, 0); sc2.add(lampLight);    var RW = 15, RFLOOR = -7.5, RTOP = 12, RRAIL = -1.4;
     var eggshell = new THREE.MeshStandardMaterial({ color: 0x6b1f1f, roughness: 0.62, metalness: 0, side: THREE.DoubleSide });
     var wainscot = new THREE.MeshStandardMaterial({ color: 0x3a2414, roughness: 0.5, metalness: 0, side: THREE.DoubleSide });
     var trim = new THREE.MeshStandardMaterial({ color: 0x2a1809, roughness: 0.45, metalness: 0 });
@@ -2351,7 +2351,7 @@ Rack: middle</pre>` },
       var frieze = new THREE.Mesh(new THREE.BoxGeometry(2 * RW, 0.7, 0.1), trim); frieze.position.set(0, RTOP - 0.9, 0.02); g.add(frieze);
       var topBoard = new THREE.Mesh(new THREE.BoxGeometry(2 * RW, 0.45, 0.22), trim); topBoard.position.set(0, RTOP - 0.22, 0.06); g.add(topBoard);
     }
-    roomSide(0, -RW, 0); roomSide(0, RW, Math.PI); roomSide(-RW, 0, Math.PI / 2); roomSide(RW, 0, -Math.PI / 2);    // square walnut legs at the four corners, down from the core
+    // wood roof over the room, planked like the floor but darker and warmer roomSide(-RW, 0, Math.PI / 2); roomSide(RW, 0, -Math.PI / 2);    // square walnut legs at the four corners, down from the core
     [[-5.4, -3.9], [5.4, -3.9], [5.4, 3.9], [-5.4, 3.9]].forEach(function (c) { var leg = new THREE.Mesh(new THREE.BoxGeometry(0.55, 5.6, 0.55), walnut); leg.position.set(c[0], -4.7, c[1]); sc2.add(leg); });    [[0, -4.31, 0, 0], [0, 4.31, 0, Math.PI], [-5.81, 0, Math.PI / 2, 0], [5.81, 0, -Math.PI / 2, 0]].forEach(function (c) { var pn = new THREE.Mesh(new THREE.PlaneGeometry(c[2] ? 8.6 : 11.6, 1.9), latMat); pn.position.set(c[0], -0.98, c[1]); pn.rotation.y = c[2] ? c[2] : c[3]; sc2.add(pn); });
 
     // the wall pieces use the same tile look: colour on the front two-thirds, white on the back third, a random colour for each piece
@@ -2380,14 +2380,14 @@ Rack: middle</pre>` },
       var uw = JADE_CELL_W / JADE_W, vh = JADE_CELL_H / JADE_H;
       var u0 = x0 / JADE_W, v0 = 1 - (y0 + JADE_CELL_H) / JADE_H;
       var uv = geo.attributes.uv;
-      for (var k = 0; k < uv.count; k++) uv.setXY(k, u0 + (uv.getX(k) + 0.25) / 0.5 * uw, v0 + (uv.getY(k) + 0.36) / 0.72 * vh);
+      for (var k = 0; k < uv.count; k++) uv.setXY(k, u0 + (uv.getX(k) + 0.25) / 0.5 * uw, v0 + (uv.getY(k) + 0.35) / 0.7 * vh);
       uv.needsUpdate = true;
     }    function makePiece() {
       var colMat = jadeMat; var pi = pieceCounter++;
       var g = new THREE.Group(), D = 0.28, d1 = D * 2 / 3, d2 = D / 3;
-      var front = new THREE.Mesh(new THREE.ExtrudeGeometry(pieceRound(0.5, 0.72, 0.06), { depth: d1, bevelEnabled: false, curveSegments: 3 }), colMat);
+      var front = new THREE.Mesh(new THREE.ExtrudeGeometry(pieceRound(0.5, 0.7, 0.06), { depth: d1, bevelEnabled: false, curveSegments: 3 }), colMat);
       front.position.z = D / 2 - d1; cellUV(front.geometry, pi); g.add(front);
-      var back = new THREE.Mesh(new THREE.ExtrudeGeometry(pieceRound(0.5, 0.72, 0.06), { depth: d2, bevelEnabled: false, curveSegments: 3 }), pieceWhite);
+      var back = new THREE.Mesh(new THREE.ExtrudeGeometry(pieceRound(0.5, 0.7, 0.06), { depth: d2, bevelEnabled: false, curveSegments: 3 }), pieceWhite);
       back.position.z = -D / 2; g.add(back);
       return g;
     }
@@ -2418,9 +2418,9 @@ Rack: middle</pre>` },
       var pl = new THREE.Mesh(new THREE.PlaneGeometry(w, h), mat);
       pl.position.set(x, y + h / 2, z); pl.rotation.y = ry; pl.renderOrder = 10; sc2.add(pl);
     }
-    seatPerson(SIL.p2, 0, -7.4, 2.5, 1.5, -0.45, 0.15);
-    seatPerson(SIL.p3f, -7.0, 0.6, 2.5, 1.33, -0.45, 1.2);
-    seatPerson(SIL.p3, 7.0, 0.6, 2.5, 1.33, -0.45, -1.2);
+    seatPerson(SIL.p2, 0, -7.4, 3.3, 2.0, -0.6, 0.15);
+    seatPerson(SIL.p3f, -7.0, 0.6, 3.3, 1.75, -0.6, 1.2);
+    seatPerson(SIL.p3, 7.0, 0.6, 3.3, 1.75, -0.6, -1.2);
     var turnOrder = ["player", "left", "middle", "right"], lookV = new THREE.Vector3(0, 0.3, 3.2);
     function turnSeat(T) { return turnOrder[Math.floor((T - 5) / 5) % turnOrder.length]; }
     var raf = 0, t0 = performance.now();
