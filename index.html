@@ -2216,7 +2216,7 @@ Rack: middle</pre>` },
 (function () {
   function openMahjongTable() {
     if (window.__mjTable) return;
-    var ov = document.createElement("div"); ov.style.cssText = "position:fixed;inset:0;z-index:5000;background:#040705;opacity:0;transition:opacity 1.2s ease 0.8s;";
+    var ov = document.createElement("div"); ov.style.cssText = "position:fixed;inset:0;z-index:5000;background:#000000;opacity:0;transition:opacity 1.2s ease 0.8s;";
     document.body.appendChild(ov);
     // transition: the desktop turns the subway green and fades out, then the table fades in
     var deskEls = Array.prototype.slice.call(document.body.children).filter(function (el) { return el !== ov && !/^(SCRIPT|STYLE|LINK)$/.test(el.tagName); });
@@ -2226,7 +2226,7 @@ Rack: middle</pre>` },
     requestAnimationFrame(function () { ov.style.opacity = "1"; });
     var rend = new THREE.WebGLRenderer({ antialias: true }); rend.setPixelRatio(Math.min(2, window.devicePixelRatio || 1)); rend.setSize(window.innerWidth, window.innerHeight);
     ov.appendChild(rend.domElement);
-    var sc2 = new THREE.Scene(); sc2.background = new THREE.Color(0x040705);
+    var sc2 = new THREE.Scene(); sc2.background = new THREE.Color(0x000000);
     var cam2 = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 100);
     var camStart = new THREE.Vector3(0, 9.5, 12), camEnd = new THREE.Vector3(0, 4.4, 9.4);
     cam2.position.copy(camStart); cam2.lookAt(0, 0, 0);
@@ -2282,8 +2282,34 @@ Rack: middle</pre>` },
     for (var q = 0; q < 4; q++) { var ox = q * 64, oy = 0; lx.strokeRect(ox + 14, oy + 22, 36, 36); lx.beginPath(); lx.moveTo(ox + 14, oy + 22); lx.lineTo(ox + 50, oy + 58); lx.moveTo(ox + 50, oy + 22); lx.lineTo(ox + 14, oy + 58); lx.stroke(); lx.strokeRect(ox + 4, oy + 150, 56, 56); lx.beginPath(); lx.moveTo(ox + 32, oy + 150); lx.lineTo(ox + 32, oy + 206); lx.stroke(); }
     var latTex = new THREE.CanvasTexture(latC); latTex.wrapS = latTex.wrapT = THREE.RepeatWrapping; latTex.repeat.set(3, 1);
     var latMat = new THREE.MeshStandardMaterial({ color: 0x4a2f1c, map: latTex, transparent: true, alphaTest: 0.5, roughness: 0.6, side: THREE.DoubleSide });
-    // square walnut legs at the four corners, down from the core
-    [[-5.4, -3.9], [5.4, -3.9], [5.4, 3.9], [-5.4, 3.9]].forEach(function (c) { var leg = new THREE.Mesh(new THREE.BoxGeometry(0.55, 2.6, 0.55), walnut); leg.position.set(c[0], -3.2, c[1]); sc2.add(leg); });    [[0, -4.31, 0, 0], [0, 4.31, 0, Math.PI], [-5.81, 0, Math.PI / 2, 0], [5.81, 0, -Math.PI / 2, 0]].forEach(function (c) { var pn = new THREE.Mesh(new THREE.PlaneGeometry(c[2] ? 8.6 : 11.6, 1.9), latMat); pn.position.set(c[0], -0.98, c[1]); pn.rotation.y = c[2] ? c[2] : c[3]; sc2.add(pn); });
+    // the room: dark red eggshell upper walls, walnut wainscoting, a chair rail, a baseboard and a wood floor
+    var RW = 15, RFLOOR = -7.5, RTOP = 8, RRAIL = -1.4;
+    var eggshell = new THREE.MeshStandardMaterial({ color: 0x6b1f1f, roughness: 0.62, metalness: 0, side: THREE.DoubleSide });
+    var wainscot = new THREE.MeshStandardMaterial({ color: 0x3a2414, roughness: 0.5, metalness: 0, side: THREE.DoubleSide });
+    var trim = new THREE.MeshStandardMaterial({ color: 0x2a1809, roughness: 0.45, metalness: 0 });
+    // herringbone wood floor: short planks laid at alternating 45-degree angles
+    var hbC = document.createElement("canvas"); hbC.width = hbC.height = 512; var hb = hbC.getContext("2d");
+    hb.fillStyle = "#3a2414"; hb.fillRect(0, 0, 512, 512);
+    for (var hi = 0; hi < 16; hi++) for (var hj = 0; hj < 16; hj++) {
+      hb.save(); hb.translate(hi * 32 + 16, hj * 32 + 16); hb.rotate(((hi + hj) % 2 ? 1 : -1) * Math.PI / 4);
+      var shade = 0.8 + 0.4 * ((hi * 7 + hj * 13) % 5) / 4;
+      hb.fillStyle = "rgb(" + Math.round(70 * shade) + "," + Math.round(44 * shade) + "," + Math.round(26 * shade) + ")";
+      hb.fillRect(-28, -7, 56, 14); hb.restore();
+    }
+    var hbTex = new THREE.CanvasTexture(hbC); hbTex.wrapS = hbTex.wrapT = THREE.RepeatWrapping; hbTex.repeat.set(3, 3);
+    var roomFloor = new THREE.MeshStandardMaterial({ map: hbTex, roughness: 0.6, metalness: 0 });
+    var fl = new THREE.Mesh(new THREE.PlaneGeometry(2 * RW, 2 * RW), roomFloor); fl.rotation.x = -Math.PI / 2; fl.position.y = RFLOOR; sc2.add(fl);
+    function roomSide(px, pz, ry) {
+      var g = new THREE.Group(); g.position.set(px, 0, pz); g.rotation.y = ry; sc2.add(g);
+      var up = new THREE.Mesh(new THREE.PlaneGeometry(2 * RW, RTOP - RRAIL), eggshell); up.position.set(0, (RTOP + RRAIL) / 2, 0); g.add(up);
+      var wain = new THREE.Mesh(new THREE.PlaneGeometry(2 * RW, RRAIL - RFLOOR), wainscot); wain.position.set(0, (RRAIL + RFLOOR) / 2, 0); g.add(wain);
+      var rail = new THREE.Mesh(new THREE.BoxGeometry(2 * RW, 0.22, 0.12), trim); rail.position.set(0, RRAIL + 0.11, 0.02); g.add(rail);
+      var base = new THREE.Mesh(new THREE.BoxGeometry(2 * RW, 0.4, 0.12), trim); base.position.set(0, RFLOOR + 0.2, 0.02); g.add(base);
+      var frieze = new THREE.Mesh(new THREE.BoxGeometry(2 * RW, 0.7, 0.1), trim); frieze.position.set(0, RTOP - 0.9, 0.02); g.add(frieze);
+      var topBoard = new THREE.Mesh(new THREE.BoxGeometry(2 * RW, 0.45, 0.22), trim); topBoard.position.set(0, RTOP - 0.22, 0.06); g.add(topBoard);
+    }
+    roomSide(0, -RW, 0); roomSide(0, RW, Math.PI); roomSide(-RW, 0, Math.PI / 2); roomSide(RW, 0, -Math.PI / 2);    // square walnut legs at the four corners, down from the core
+    [[-5.4, -3.9], [5.4, -3.9], [5.4, 3.9], [-5.4, 3.9]].forEach(function (c) { var leg = new THREE.Mesh(new THREE.BoxGeometry(0.55, 5.6, 0.55), walnut); leg.position.set(c[0], -4.7, c[1]); sc2.add(leg); });    [[0, -4.31, 0, 0], [0, 4.31, 0, Math.PI], [-5.81, 0, Math.PI / 2, 0], [5.81, 0, -Math.PI / 2, 0]].forEach(function (c) { var pn = new THREE.Mesh(new THREE.PlaneGeometry(c[2] ? 8.6 : 11.6, 1.9), latMat); pn.position.set(c[0], -0.98, c[1]); pn.rotation.y = c[2] ? c[2] : c[3]; sc2.add(pn); });
 
     // the wall pieces use the same tile look: colour on the front two-thirds, white on the back third, a random colour for each piece
     function pieceRound(w, h, rad) {
@@ -2308,12 +2334,12 @@ Rack: middle</pre>` },
     // a wall stack: 17 along each side, two tiles high, lying flat on the table
     function wallStack(x0, z0, dx, dz, n, yaw, sx) { if (sx === undefined) sx = 1;
       for (var i = 0; i < n; i++) for (var k = 0; k < 2; k++) {
-        var m = makePiece(); m.scale.set(0.765 * sx, 0.765, 0.765);
+        var m = makePiece(); m.scale.set(Math.max(Math.abs(dx), Math.abs(dz)) * 0.9 / 0.5, 0.765, 0.765);
         m.rotation.order = "YXZ"; m.rotation.x = -Math.PI / 2; m.rotation.y = yaw;
         m.position.set(x0 + dx * i * 0.9, 0.107 + k * 0.214, z0 + dz * i * 0.9);
         sc2.add(m);
       }
-    }    function wall(x0, z0, dx, dz, n, rot, flip) { if (flip === undefined) flip = true; for (var i = 0; i < n; i++) { var m = makePiece(); m.scale.setScalar(0.765); m.position.set(x0 + dx * i * 0.9, 0.2754, z0 + dz * i * 0.9); m.rotation.y = rot + (flip ? Math.PI : 0); sc2.add(m); } }
+    }    function wall(x0, z0, dx, dz, n, rot, flip) { if (flip === undefined) flip = true; for (var i = 0; i < n; i++) { var m = makePiece(); m.scale.set(Math.max(Math.abs(dx), Math.abs(dz)) * 0.9 / 0.5, 0.765, 0.765); m.position.set(x0 + dx * i * 0.9, 0.2754, z0 + dz * i * 0.9); m.rotation.y = rot + (flip ? Math.PI : 0); sc2.add(m); } }
     // wall stacks: 17 across, two high, on each side
     wallStack(-4.21, -4.15, 0.585, 0, 17, 0, 1.17);
     wallStack(4.21, 4.15, -0.585, 0, 17, Math.PI, 1.17);
