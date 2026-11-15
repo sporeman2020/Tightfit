@@ -2093,7 +2093,10 @@ Rack: middle</pre>` },
     pst.vy = 0;    if (pst.y <= 0) { pst.y = 0; if (pst.vy < 0) pst.vy = 0; }
     pst.x += dx; pst.z += dz;
     person.position.set(pst.x, pst.y, pst.z);
-    cam.position.set(pst.x, pst.y + 2.6, pst.z + 4.2); cam.lookAt(pst.x, pst.y + 1.3, pst.z);
+    cam.position.set(pst.x, pst.y + 2.6, pst.z + 4.2);
+    // the look target moves from the figure toward the hedron as the figure rises
+    var lt = Math.max(0, Math.min(1, pst.y / Math.max(1, hw.y)));
+    cam.lookAt(pst.x + (hw.x - pst.x) * lt, pst.y + 1.3 + (hw.y - pst.y - 1.3) * lt, pst.z + (hw.z - pst.z) * lt);
     if (!holdingS && !kal.done && cam.position.distanceTo(pst.hedWorld) < 30) { kal.on = true; kal.t = 0; kal.next = 2; kal.glitches = 0; kal.glitchFrames = 0; kal.camPos = cam.position.clone(); }
     sPrompt.style.display = "flex";
     sPrompt.style.opacity = holdingS ? "1" : String((0.5 + 0.5 * Math.sin(T * 7)).toFixed(2));
