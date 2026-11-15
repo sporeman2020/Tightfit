@@ -2241,15 +2241,15 @@ Rack: middle</pre>` },
     var seed = 7; function rnd() { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
     function brickCanvas(mode) {
       var c = document.createElement("canvas"); c.width = c.height = 1024; var x = c.getContext("2d");
-      x.fillStyle = mode === "rough" ? "#ffffff" : "#5a5048"; x.fillRect(0, 0, 1024, 1024);
-      var rowH = 64, brickW = 64;
-      for (var r = 0; r < 16; r++) {
+      x.fillStyle = mode === "rough" ? "#ffffff" : "#cfc6b0"; x.fillRect(0, 0, 1024, 1024);
+      var rowH = 342, brickW = 342;
+      for (var r = 0; r < 3; r++) {
         var off = 0;
-        for (var k = 0; k < 16; k++) {
+        for (var k = 0; k < 3; k++) {
           var bx = k * brickW + off, by = r * rowH, v = rnd();
           if (mode === "rough") { var gv = Math.round(30 + 60 * v); x.fillStyle = "rgb(" + gv + "," + gv + "," + gv + ")"; }
-          else { x.fillStyle = "rgb(" + Math.round(8 + 16 * v) + "," + Math.round(60 + 30 * v) + "," + Math.round(52 + 20 * v) + ")"; }
-          x.fillRect(bx + 3, by + 3, brickW - 6, rowH - 6);
+          else { x.fillStyle = "rgb(" + Math.round(18 + 30 * v) + "," + Math.round(92 + 45 * v) + "," + Math.round(74 + 25 * v) + ")"; }
+          x.fillRect(bx + 4, by + 4, brickW - 8, rowH - 8);
           if (mode !== "rough") {
             var gr = x.createLinearGradient(bx, by, bx, by + rowH);
             gr.addColorStop(0, "rgba(255,255,255,0.20)"); gr.addColorStop(0.45, "rgba(255,255,255,0)"); gr.addColorStop(1, "rgba(0,0,0,0.14)");
@@ -2259,8 +2259,8 @@ Rack: middle</pre>` },
       }
       return c;
     }
-    var colTex = new THREE.CanvasTexture(brickCanvas("color")); colTex.wrapS = colTex.wrapT = THREE.RepeatWrapping; colTex.repeat.set(2, 1.5); colTex.anisotropy = 4;
-    var rouTex = new THREE.CanvasTexture(brickCanvas("rough")); rouTex.wrapS = rouTex.wrapT = THREE.RepeatWrapping; rouTex.repeat.set(2, 1.5);
+    var colTex = new THREE.CanvasTexture(brickCanvas("color")); colTex.wrapS = colTex.wrapT = THREE.RepeatWrapping; colTex.repeat.set(1, 1); colTex.anisotropy = 4;
+    var rouTex = new THREE.CanvasTexture(brickCanvas("rough")); rouTex.wrapS = rouTex.wrapT = THREE.RepeatWrapping; rouTex.repeat.set(1, 1);
     // the lattice (original colour) sits underneath and fades out as the tiles fade in
     var lattice = new THREE.Mesh(new THREE.PlaneGeometry(12, 9), new THREE.MeshStandardMaterial({ color: 0xd8c7a0, roughness: 0.9 }));
     lattice.rotation.x = -Math.PI / 2; lattice.position.y = -0.01; sc2.add(lattice);
