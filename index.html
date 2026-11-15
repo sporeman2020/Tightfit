@@ -2272,7 +2272,7 @@ Rack: middle</pre>` },
     seatPerson(SIL.p2, 0, -6.8, 1.77, 1.06, 1.2);
     seatPerson(SIL.p3f, -6.4, 0.6, 1.77, 0.94, 1.2);
     seatPerson(SIL.p3, 6.4, 0.6, 1.77, 0.94, 1.2);
-    var turnOrder = ["left", "middle", "right", "middle"], lookX = 0;
+    var turnOrder = ["player", "left", "middle", "right"], lookV = new THREE.Vector3(0, 0.3, 3.2);
     function turnSeat(T) { return turnOrder[Math.floor((T - 5) / 5) % turnOrder.length]; }
     var raf = 0, t0 = performance.now();
     function ease(x) { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); }
