@@ -2548,6 +2548,8 @@ Rack: middle</pre>` },
     var WINDS = ['East', 'South', 'West', 'North'];
     var wallStarts = [[3.6, 4.15], [4.15, -3.6], [-3.6, -4.15], [-4.15, 3.6]];
     function setupWinds() {
+      // the four wind faces glow softly over their tile faces, so each player's wind reads at a glance
+      for (var wt = 27; wt <= 30; wt++) { typeMats[wt].emissive.setHex(0xffe9a0); typeMats[wt].emissiveIntensity = 0.35; }
       var panel = document.createElement("div");
       panel.style.cssText = "position:absolute;left:16px;bottom:16px;font:16px MGPixel, monospace;color:#fff;line-height:1.7;pointer-events:none;background:rgba(0,0,0,.45);padding:8px 12px;";
       for (var s = 0; s < 4; s++) {
@@ -2564,7 +2566,7 @@ Rack: middle</pre>` },
         var at = Math.min(1, T / 4), eo = 1 - Math.pow(1 - at, 3);
         var dd = startSeats[starter], thetaT = Math.atan2(-dd[1], dd[0]);
         arrowGroup.rotation.y = (thetaT + 12 * Math.PI) * eo;
-        if (at >= 1) { arrowDone = true; startLbl.textContent = startNames[starter] + (starter === 0 ? ' are' : ' is') + ' East'; startLbl.style.opacity = '1'; setupWinds(); }
+        if (at >= 1) { arrowDone = true; startLbl.textContent = startNames[starter] + (starter === 0 ? ' are' : ' is') + ' East'; startLbl.style.opacity = '1'; setTimeout(function () { startLbl.style.opacity = '0'; }, 2500); setupWinds(); }
       }
       if (arrowDone && T > 4.5) { if (!westSet) { westSet = true; setupWestWall(); } tableGroup.visible = true; }
       // dealing: each hand tile leaves its wall and slides into its place, one after another after the lamp
