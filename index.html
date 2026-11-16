@@ -2537,7 +2537,7 @@ Rack: middle</pre>` },
       var extra = i === 13;
       var src = extra ? findSrc(edge, 16, 0) : findSrc(edge, 4 + i);
       m.children[1].material = src.children[1].material;   // the tile keeps the type of the wall piece it came from (on its white side)
-      dealt.push({ m: m, src: src, to: to, k: dealt.length, extra: extra, edge: edge }); m.visible = false; tableGroup.add(m); } }
+      dealt.push({ m: m, src: src, to: to, k: dealt.length, extra: extra, edge: edge, base: m.scale.clone(), hov: 0 }); m.visible = false; tableGroup.add(m); } }
     // wall stacks: 17 across, two high, on each side
     // all four sides run 17 stacks at the same spacing, so the ring is a true square (±3.6 along each side)
     // every seat has a discard area in its quadrant: 4 columns by 6 rows of empty slots, outlined until discards are dealt in
@@ -2606,6 +2606,34 @@ Rack: middle</pre>` },
     var pointerLow = false, zoomLerp = 0;
     function onMove(e) { pointerLow = e.clientY > window.innerHeight * 0.75; }
     window.addEventListener("mousemove", onMove);
+    // a plain click (not a drag) on one of your hand tiles discards it into your South discard grid
+    var downAt = null, southSlot = 0;
+    rend.domElement.addEventListener("pointerdown", function (e) { downAt = [e.clientX, e.clientY]; });
+    rend.domElement.addEventListener("pointerup", function (e) {
+      var start = downAt; downAt = null;
+      if (!start || !hoverD || southSlot >= 24) return;
+      if (Math.hypot(e.clientX - start[0], e.clientY - start[1]) > 6) return;   // a drag, not a click
+      var d = hoverD, k = southSlot++;
+      d.discarded = true; d.m.visible = false; d.hov = 0; hoverD = null;
+      var dm = d.m.clone();
+      dm.scale.copy(d.base); dm.rotation.set(-Math.PI / 2, 0, 0);
+      dm.position.set(-1.9 + ((k % 4) - 1.5) * 0.675, 0.04, 2.2 + (Math.floor(k / 4) - 2.5) * 0.5);
+      tableGroup.add(dm);
+    });
+    // only your own hand (the South row) reacts to the pointer
+    var ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
+    rend.domElement.addEventListener("pointermove", function (e) {
+      var r = rend.domElement.getBoundingClientRect();
+      ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+      ray.setFromCamera(ndc, cam2);
+      var mine = dealt.filter(function (d) { return d.edge === "S" && d.m.visible; });
+      var hits = ray.intersectObjects(mine.map(function (d) { return d.m; }), true);
+      hoverD = null;
+      if (hits.length) {
+        var obj = hits[0].object;
+        hoverD = mine.find(function (d) { return d.m === obj || d.m === obj.parent; }) || null;
+      }
+    });
     // once the arrow picks East, the other winds follow in turn order and the wall's start is marked
     var WINDS = ['East', 'South', 'West', 'North'];
     var wallStarts = [[3.6, 4.15], [4.15, -3.6], [-3.6, -4.15], [-4.15, 3.6]];
@@ -2621,6 +2649,7 @@ Rack: middle</pre>` },
       }
       ov.appendChild(panel);
     }
+    var hoverD = null;   // the hand tile under the pointer, if any
     function ease(x) { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); }
     function frame() {
       var T = (performance.now() - t0) / 1000;
@@ -2636,9 +2665,12 @@ Rack: middle</pre>` },
         var st = 5.0 + d.k * 0.035, p = ease((T - st) / 0.55);
         // the 14th tile is only dealt to the seat that is East (the arrow's pick); other seats keep 13
         var active = !d.extra || d.edge === ['S', 'E', 'N', 'W'][starter];
-        d.m.visible = T >= st && active;
+        d.m.visible = T >= st && active && !d.discarded;
         if (T >= st && active) d.src.visible = false;   // the wall piece leaves the wall as its tile is dealt
+        d.hov = (d.edge === 'S' && d === hoverD) ? Math.min(1, d.hov + 0.2) : Math.max(0, d.hov - 0.2);
         d.m.position.lerpVectors(d.src.position, d.to, p);
+        d.m.position.y += 0.12 * d.hov;                       // the hovered tile lifts a little
+        d.m.scale.copy(d.base).multiplyScalar(1 + 0.12 * d.hov);   // and grows slightly
       });
       var swing = ease(T / 4);                                  // rotate into three-point perspective over 4 seconds
       cam2.position.lerpVectors(camStart, camEnd, swing);
