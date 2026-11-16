@@ -2322,14 +2322,14 @@ Rack: middle</pre>` },
     var colTex = new THREE.CanvasTexture(brickCanvas("color")); colTex.wrapS = colTex.wrapT = THREE.RepeatWrapping; colTex.repeat.set(1, 1); colTex.anisotropy = 4;
     var rouTex = new THREE.CanvasTexture(brickCanvas("rough")); rouTex.wrapS = rouTex.wrapT = THREE.RepeatWrapping; rouTex.repeat.set(1, 1);
     // the lattice (original colour) sits underneath and fades out as the tiles fade in
-    var lattice = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), new THREE.MeshStandardMaterial({ color: 0xd8c7a0, roughness: 0.9 }));
+    var lattice = new THREE.Mesh(new THREE.PlaneGeometry(12, 12), new THREE.MeshStandardMaterial({ color: 0xd8c7a0, roughness: 0.9 }));
     lattice.rotation.x = -Math.PI / 2; lattice.position.y = -0.01; sc2.add(lattice);
     var floorMat = new THREE.MeshStandardMaterial({ map: colTex, color: new THREE.Color().setHSL(tableHue, 0.6, 0.7), roughnessMap: rouTex, roughness: 0.05, metalness: 0, transparent: true, opacity: 0 });
-    var floor = new THREE.Mesh(new THREE.PlaneGeometry(14, 14), floorMat);
+    var floor = new THREE.Mesh(new THREE.PlaneGeometry(12, 12), floorMat);
     floor.rotation.x = -Math.PI / 2; sc2.add(floor);
     // tile thickness: a thin grout-coloured base under the mosaic
     var grout = new THREE.MeshStandardMaterial({ color: 0x5a5048, roughness: 0.8 });
-    var base = new THREE.Mesh(new THREE.BoxGeometry(14, 0.06, 14), grout); base.position.y = -0.03; sc2.add(base);
+    var base = new THREE.Mesh(new THREE.BoxGeometry(12, 0.06, 12), grout); base.position.y = -0.03; sc2.add(base);
     // walnut: bevelled rim that sits slightly past the tile edge, and one solid core below
     var walnut = new THREE.MeshStandardMaterial({ color: 0x4a2f1c, roughness: 0.55, metalness: 0 });
     var rimShape = new THREE.Shape(); rimShape.moveTo(-6.4, -4.9); rimShape.lineTo(6.4, -4.9); rimShape.lineTo(6.4, 4.9); rimShape.lineTo(-6.4, 4.9); rimShape.lineTo(-6.4, -4.9);
@@ -2337,7 +2337,7 @@ Rack: middle</pre>` },
     rimShape.holes.push(rimHole);
     var rim = new THREE.Mesh(new THREE.ExtrudeGeometry(rimShape, { depth: 0.1, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.05, bevelSegments: 3, curveSegments: 4 }), walnut);
     rim.rotation.x = -Math.PI / 2; rim.position.y = 0.01; sc2.add(rim);
-    var core = new THREE.Mesh(new THREE.BoxGeometry(13.6, 1.9, 13.6), walnut); core.position.y = -0.98; sc2.add(core);
+    var core = new THREE.Mesh(new THREE.BoxGeometry(11.6, 1.9, 11.6), walnut); core.position.y = -0.98; sc2.add(core);
     // lattice apron below the top, after the carved panels on the reference table: a walnut fret lattice on each side
     var latC = document.createElement("canvas"); latC.width = latC.height = 256; var lx = latC.getContext("2d");
     lx.clearRect(0, 0, 256, 256); lx.strokeStyle = "#4a2f1c"; lx.lineWidth = 16; lx.lineCap = "square";
