@@ -17,14 +17,14 @@
 <text x="128.00" y="615.76" font-family='"Microsoft YaHei", sans-serif' font-size="96" font-weight="bold" fill="rgba(190,45,40,1.000)" text-anchor="middle" dominant-baseline="middle">萬</text>
 <text x="384.00" y="486.88" font-family='"Microsoft YaHei", sans-serif' font-size="120" font-weight="bold" fill="rgba(0,0,0,1.000)" text-anchor="middle" dominant-baseline="middle">九</text>
 <text x="384.00" y="615.76" font-family='"Microsoft YaHei", sans-serif' font-size="96" font-weight="bold" fill="rgba(190,45,40,1.000)" text-anchor="middle" dominant-baseline="middle">萬</text>
-<ellipse cx="640.00" cy="537.00" rx="41.47" ry="41.47" fill="none" stroke="rgba(30,80,170,1.000)" stroke-width="19.456000000000003"/>
-<ellipse cx="640.00" cy="537.00" rx="15.36" ry="15.36" fill="rgba(30,80,170,1.000)"/>
-<ellipse cx="896.00" cy="483.30" rx="41.47" ry="41.47" fill="none" stroke="rgba(30,80,170,1.000)" stroke-width="19.456000000000003"/>
-<ellipse cx="896.00" cy="483.30" rx="15.36" ry="15.36" fill="rgba(30,80,170,1.000)"/>
+<ellipse cx="640.00" cy="537.00" rx="49.77" ry="49.77" fill="none" stroke="rgba(30,120,70,1.000)" stroke-width="23.3472"/>
+<ellipse cx="640.00" cy="537.00" rx="18.43" ry="18.43" fill="rgba(30,120,70,1.000)"/>
+<ellipse cx="896.00" cy="483.30" rx="41.47" ry="41.47" fill="none" stroke="rgba(30,120,70,1.000)" stroke-width="19.456000000000003"/>
+<ellipse cx="896.00" cy="483.30" rx="15.36" ry="15.36" fill="rgba(30,120,70,1.000)"/>
 <ellipse cx="896.00" cy="590.70" rx="41.47" ry="41.47" fill="none" stroke="rgba(30,80,170,1.000)" stroke-width="19.456000000000003"/>
 <ellipse cx="896.00" cy="590.70" rx="15.36" ry="15.36" fill="rgba(30,80,170,1.000)"/>
-<ellipse cx="1116.16" cy="465.40" rx="29.03" ry="29.03" fill="none" stroke="rgba(30,80,170,1.000)" stroke-width="13.619200000000001"/>
-<ellipse cx="1116.16" cy="465.40" rx="10.75" ry="10.75" fill="rgba(30,80,170,1.000)"/>
+<ellipse cx="1116.16" cy="465.40" rx="29.03" ry="29.03" fill="none" stroke="rgba(30,120,70,1.000)" stroke-width="13.619200000000001"/>
+<ellipse cx="1116.16" cy="465.40" rx="10.75" ry="10.75" fill="rgba(30,120,70,1.000)"/>
 <ellipse cx="1152.00" cy="537.00" rx="29.03" ry="29.03" fill="none" stroke="rgba(190,45,40,1.000)" stroke-width="13.619200000000001"/>
 <ellipse cx="1152.00" cy="537.00" rx="10.75" ry="10.75" fill="rgba(190,45,40,1.000)"/>
 <ellipse cx="1187.84" cy="608.60" rx="29.03" ry="29.03" fill="none" stroke="rgba(30,80,170,1.000)" stroke-width="13.619200000000001"/>
