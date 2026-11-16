@@ -2468,15 +2468,20 @@ Rack: middle</pre>` },
     // the tile maps: normal and roughness from the malachite picture; each type gets its own face
     var tileNormal = new THREE.TextureLoader().load('assets/normal_800.jpg');
     var tileRough = new THREE.TextureLoader().load('assets/roughness_800.jpg');
+    var tileSheet = new THREE.TextureLoader().load('assets/tile_types.png');   // 7 by 5 grid of the 34 type labels
     var typeMats = TYPE_LABELS.map(function (lab) {
-      var cv = document.createElement('canvas'); cv.width = 256; cv.height = 358;
-      var cx = cv.getContext('2d');
-      cx.fillStyle = '#f7f1df'; cx.fillRect(0, 0, 256, 358);
-      cx.fillStyle = '#1d2a24'; cx.textAlign = 'center'; cx.textBaseline = 'middle';
-      cx.font = 'bold 120px serif'; cx.fillText(lab, 128, 179);
-      return new THREE.MeshStandardMaterial({ map: new THREE.CanvasTexture(cv), normalMap: tileNormal, normalScale: new THREE.Vector2(0.3, 0.3), roughnessMap: tileRough, roughness: 0.6, metalness: 0 });
+      // the sheet holds only the type text (transparent around it), so the white face shows through
+      return new THREE.MeshStandardMaterial({ map: tileSheet, color: 0xf4ecd8, transparent: true, alphaTest: 0.5, normalMap: tileNormal, normalScale: new THREE.Vector2(0.3, 0.3), roughnessMap: tileRough, roughness: 0.6, metalness: 0 });
     });
     // maps the front face so the whole face shows the type (uv 0..1 across the tile)
+    // maps the white face onto this type's cell in the sheet (mirrored, so it reads from the table side)
+    function typeUV(geo, t) {
+      var c = t % 7, r = Math.floor(t / 7), uw = 1 / 7, vh = 1 / 5;
+      var u0 = c * uw, v0 = 1 - (r + 1) * vh;
+      var uv = geo.attributes.uv;
+      for (var k = 0; k < uv.count; k++) uv.setXY(k, u0 + (1 - (uv.getX(k) + 0.25) / 0.5) * uw, v0 + (uv.getY(k) + 0.35) / 0.7 * vh);
+      uv.needsUpdate = true;
+    }
     function faceUV(geo, mirror) {
       var uv = geo.attributes.uv;
       for (var k = 0; k < uv.count; k++) { var u = (uv.getX(k) + 0.25) / 0.5; uv.setXY(k, mirror ? 1 - u : u, (uv.getY(k) + 0.35) / 0.7); }
@@ -2504,7 +2509,7 @@ Rack: middle</pre>` },
       front.position.z = D / 2 - d1; g.add(front);
       // the white side carries the tile type, mirrored so it reads from the table side
       var bgeo = new THREE.ExtrudeGeometry(pieceRound(0.5, 0.7, 0.06), { depth: d2, bevelEnabled: false, curveSegments: 3 });
-      faceUV(bgeo, true);
+      typeUV(bgeo, type);
       var back = new THREE.Mesh(bgeo, [typeMats[type], pieceWhite]);
       back.position.z = -D / 2; g.add(back);
       return g;
