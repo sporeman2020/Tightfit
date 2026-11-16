@@ -2606,10 +2606,36 @@ Rack: middle</pre>` },
     var pointerLow = false, zoomLerp = 0;
     function onMove(e) { pointerLow = e.clientY > window.innerHeight * 0.75; }
     window.addEventListener("mousemove", onMove);
+    // press on a hovered hand tile and drag: it follows along your row and the other tiles slide to make room
+    var dragD = null, dragCand = null;
+    var dragPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -5.2), dragHit = new THREE.Vector3();
+    function handOrder(exceptD) {
+      return dealt.filter(function (d) { return d.edge === "S" && d.m.visible && d !== exceptD; })
+        .sort(function (a, b) { return a.to.x - b.to.x; });
+    }
+    function dragMove(e) {
+      if (!dragD) {
+        if (!dragCand || !downAt || Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) <= 6) return false;
+        dragD = dragCand; downAt = null;
+      }
+      var r = rend.domElement.getBoundingClientRect();
+      ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
+      ray.setFromCamera(ndc, cam2);
+      hoverD = dragD;   // keeps the lifted look while dragging
+      if (!ray.ray.intersectPlane(dragPlane, dragHit)) return true;
+      var others = handOrder(dragD);
+      var idx = Math.max(0, Math.min(others.length, Math.round((dragHit.x + 2.93) / 0.45)));
+      var seq = others.slice(); seq.splice(idx, 0, dragD);
+      seq.forEach(function (d, i) { d.to.x = -2.93 + 0.45 * i; });   // the other tiles shift to make room
+      return true;
+    }
+    function dragEnd() { dragD = null; dragCand = null; hoverD = null; }
     // a plain click (not a drag) on one of your hand tiles discards it into your South discard grid
     var downAt = null, southSlot = 0;
-    rend.domElement.addEventListener("pointerdown", function (e) { downAt = [e.clientX, e.clientY]; });
+    rend.domElement.addEventListener("pointerdown", function (e) { downAt = [e.clientX, e.clientY]; dragCand = hoverD; });
     rend.domElement.addEventListener("pointerup", function (e) {
+      dragCand = null;
+      if (dragD) { dragEnd(); return; }
       var start = downAt; downAt = null;
       if (!start || !hoverD || southSlot >= 24) return;
       if (Math.hypot(e.clientX - start[0], e.clientY - start[1]) > 6) return;   // a drag, not a click
@@ -2623,6 +2649,7 @@ Rack: middle</pre>` },
     // only your own hand (the South row) reacts to the pointer
     var ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
     rend.domElement.addEventListener("pointermove", function (e) {
+      if (dragMove(e)) return;
       var r = rend.domElement.getBoundingClientRect();
       ndc.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
       ray.setFromCamera(ndc, cam2);
