@@ -2498,6 +2498,7 @@ Rack: middle</pre>` },
       ov.appendChild(panel);
       var mk = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.12, 0.5), new THREE.MeshStandardMaterial({ color: 0xffd27a, emissive: 0x7a4a10, emissiveIntensity: 0.9, roughness: 0.3 }));
       mk.position.set(wallStarts[starter][0], 0.95, wallStarts[starter][1]);
+      mk.visible = false;   // the wall-start token is hidden for now
       tableGroup.add(mk);
     }
     function ease(x) { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); }
