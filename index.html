@@ -954,22 +954,23 @@ Rack: middle</pre>` },
         <div class="sp-cover-sub">Public Playlist · Bake Off Mix · Free Tier</div>
       </div>
       <div class="ad-break" id="adBreak" hidden>Ad break: this song is sponsored by butter. Skip in 5… 4…</div>
-      <div class="sp-list">
+      <iframe title="Spotify playlist" style="display:block;width:100%;border:0;border-radius:12px;" height="352" src="https://open.spotify.com/embed/playlist/37i9dQZF1EVHGWrwldPRtj?utm_source=generator" allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy"></iframe>
+      <div class="sp-list" hidden>
         <div class="sp-row"><span class="sp-n">1</span><span class="sp-thumb" style="background:url(images/photos/photo-21.jpg) center / cover"></span><span class="sp-t"><b>Whisk and Wait</b><small>Bake Off Mix</small></span><span class="sp-d">3:57</span></div>
         <div class="sp-row"><span class="sp-n">2</span><span class="sp-thumb" style="background:url(images/photos/photo-22.jpg) center / cover"></span><span class="sp-t"><b>Sponge Interlude</b><small>Oven Choir</small></span><span class="sp-d">5:18</span></div>
         <div class="sp-row"><span class="sp-n">3</span><span class="sp-thumb" style="background:url(images/photos/photo-23.jpg) center / cover"></span><span class="sp-t"><b>Custard Dreams</b><small>Whisk Kids</small></span><span class="sp-d">3:40</span></div>
         <div class="sp-row"><span class="sp-n">4</span><span class="sp-thumb" style="background:url(images/photos/photo-24.jpg) center / cover"></span><span class="sp-t"><b>Frosting Waltz</b><small>Piping Bag</small></span><span class="sp-d">4:21</span></div>
         <div class="sp-row"><span class="sp-n">5</span><span class="sp-thumb" style="background:#2f7f7a"></span><span class="sp-t"><b>Bread Proofing</b><small>Yeast Club</small></span><span class="sp-d">5:13</span></div>
       </div>
-      <div class="sp-ctrl">
+      <div class="sp-ctrl" hidden>
         <button type="button" class="sp-icon" aria-label="Replay">&#8634;</button>
         <button type="button" class="sp-icon" aria-label="Rewind">&#9664;&#9664;</button>
         <button type="button" id="playBtn" class="sp-play" aria-label="Play">&#9654;</button>
         <button type="button" class="sp-icon" aria-label="Skip">&#9654;&#9654;</button>
         <button type="button" class="sp-icon" aria-label="Loop">&#8644;</button>
       </div>
-      <div class="lcd" id="lcd">01:12 / 03:05</div>
-      <div class="bar"><span></span></div>
+      <div class="lcd" id="lcd" hidden>01:12 / 03:05</div>
+      <div class="bar" hidden><span></span></div>
     </div>`;
   desk.appendChild(player);
   // Jam code lives in its own window just outside the player.
