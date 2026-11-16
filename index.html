@@ -2477,9 +2477,9 @@ Rack: middle</pre>` },
       return new THREE.MeshStandardMaterial({ map: new THREE.CanvasTexture(cv), normalMap: tileNormal, normalScale: new THREE.Vector2(0.3, 0.3), roughnessMap: tileRough, roughness: 0.6, metalness: 0 });
     });
     // maps the front face so the whole face shows the type (uv 0..1 across the tile)
-    function faceUV(geo) {
+    function faceUV(geo, mirror) {
       var uv = geo.attributes.uv;
-      for (var k = 0; k < uv.count; k++) uv.setXY(k, (uv.getX(k) + 0.25) / 0.5, (uv.getY(k) + 0.35) / 0.7);
+      for (var k = 0; k < uv.count; k++) { var u = (uv.getX(k) + 0.25) / 0.5; uv.setXY(k, mirror ? 1 - u : u, (uv.getY(k) + 0.35) / 0.7); }
       uv.needsUpdate = true;
     }
     var JADE_PIECES = 166;   // cells in the manifest; pieces past this wrap around so every face samples the image
@@ -2495,19 +2495,22 @@ Rack: middle</pre>` },
     }    function makePiece() {
       var pi = pieceCounter++; var type = typeDeck[pi % typeDeck.length];   // the wall is built first, so these take the 136 in order
       var g = new THREE.Group(), D = 0.34, d1 = D * 2 / 3, d2 = D / 3;
+      // the coloured side keeps the malachite design, cut to this piece's cell
       var fgeo = new THREE.ExtrudeGeometry(pieceRound(0.5, 0.7, 0.06), { depth: d1, bevelEnabled: false, curveSegments: 3 });
-      faceUV(fgeo);
-      // group 0 is the face (the type), group 1 the sides (malachite)
-      var front = new THREE.Mesh(fgeo, [typeMats[type], jadeMat]);
+      cellUV(fgeo, pi);
+      var front = new THREE.Mesh(fgeo, jadeMat);
       front.position.z = D / 2 - d1; g.add(front);
-      var back = new THREE.Mesh(new THREE.ExtrudeGeometry(pieceRound(0.5, 0.7, 0.06), { depth: d2, bevelEnabled: false, curveSegments: 3 }), pieceWhite);
+      // the white side carries the tile type, mirrored so it reads from the table side
+      var bgeo = new THREE.ExtrudeGeometry(pieceRound(0.5, 0.7, 0.06), { depth: d2, bevelEnabled: false, curveSegments: 3 });
+      faceUV(bgeo, true);
+      var back = new THREE.Mesh(bgeo, [typeMats[type], pieceWhite]);
       back.position.z = -D / 2; g.add(back);
       return g;
     }
     // a wall stack: 17 along each side, two tiles high, lying flat on the table
     function wallStack(x0, z0, dx, dz, n, yaw, sx, edge) { if (sx === undefined) sx = 1;
       for (var i = 0; i < n; i++) for (var k = 0; k < 2; k++) {
-        var m = makePiece(); m.scale.set(Math.max(Math.abs(dx), Math.abs(dz)) * 0.9 / 0.5, 0.765, 0.765);
+        var m = makePiece(); m.scale.set(Math.max(Math.abs(dx), Math.abs(dz)) * 0.9 / 0.5 * 0.8, 0.765 * 0.8, 0.765 * 0.8);
         m.rotation.order = "YXZ"; m.rotation.x = -Math.PI / 2; m.rotation.y = yaw; m.userData.side = (yaw === Math.PI / 2) ? 'west' : 'other'; m.userData.idx = i; m.userData.layer = k; m.userData.edge = edge;
         m.position.set(x0 + dx * i * 0.9, 0.14 + k * 0.27, z0 + dz * i * 0.9);   // layers lifted so the tile thickness (0.26) does not overlap
         tableGroup.add(m);
@@ -2520,12 +2523,12 @@ Rack: middle</pre>` },
       tableGroup.children.forEach(function (c) { if (c.userData.edge === edge && c.userData.idx === idx && c.userData.layer === L) found = c; });
       return found;
     }
-    function wall(x0, z0, dx, dz, n, rot, flip, edge) { if (flip === undefined) flip = true; for (var i = 0; i < n; i++) { var m = makePiece(); m.scale.set(Math.max(Math.abs(dx), Math.abs(dz)) * 0.9 / 0.5, 0.765, 0.765); m.rotation.y = rot + (flip ? Math.PI : 0); var to = new THREE.Vector3(x0 + dx * i * 0.9, 0.2754, z0 + dz * i * 0.9);
+    function wall(x0, z0, dx, dz, n, rot, flip, edge) { if (flip === undefined) flip = true; for (var i = 0; i < n; i++) { var m = makePiece(); m.scale.set(Math.max(Math.abs(dx), Math.abs(dz)) * 0.9 / 0.5 * 0.8, 0.765 * 0.8, 0.765 * 0.8); m.rotation.y = rot + (flip ? Math.PI : 0); var to = new THREE.Vector3(x0 + dx * i * 0.9, 0.2754, z0 + dz * i * 0.9);
       // each tile is taken from the wall on its own side of the table, at the height of the top layer
       // the 14th tile (the dealer's extra) comes from the bottom layer at the end of the wall
       var extra = i === 13;
       var src = extra ? findSrc(edge, 16, 0) : findSrc(edge, 4 + i);
-      m.children[0].material = src.children[0].material;   // the tile keeps the type of the wall piece it came from
+      m.children[1].material = src.children[1].material;   // the tile keeps the type of the wall piece it came from (on its white side)
       dealt.push({ m: m, src: src, to: to, k: dealt.length, extra: extra, edge: edge }); m.visible = false; tableGroup.add(m); } }
     // wall stacks: 17 across, two high, on each side
     // all four sides run 17 stacks at the same spacing, so the ring is a true square (±3.6 along each side)
