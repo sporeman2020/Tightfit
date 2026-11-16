@@ -2337,7 +2337,12 @@ Rack: middle</pre>` },
     rimShape.holes.push(rimHole);
     var rim = new THREE.Mesh(new THREE.ExtrudeGeometry(rimShape, { depth: 0.1, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.05, bevelSegments: 3, curveSegments: 4 }), walnut);
     rim.rotation.x = -Math.PI / 2; rim.position.y = 0.01; sc2.add(rim);
-    var core = new THREE.Mesh(new THREE.BoxGeometry(11.6, 1.9, 11.6), walnut); core.position.y = -0.98; sc2.add(core);
+    // walnut frame: a 13.2 square that surrounds the felt, with the corners cut off at 45 degrees
+    var fS = 6.6, fC = 1.1, frameShape = new THREE.Shape();
+    frameShape.moveTo(-fS + fC, -fS); frameShape.lineTo(fS - fC, -fS); frameShape.lineTo(fS, -fS + fC); frameShape.lineTo(fS, fS - fC);
+    frameShape.lineTo(fS - fC, fS); frameShape.lineTo(-fS + fC, fS); frameShape.lineTo(-fS, fS - fC); frameShape.lineTo(-fS, -fS + fC); frameShape.closePath();
+    var core = new THREE.Mesh(new THREE.ExtrudeGeometry(frameShape, { depth: 1.9, bevelEnabled: false }), walnut);
+    core.rotation.x = -Math.PI / 2; core.position.y = -1.93; sc2.add(core);   // top face sits at the felt's level
     // lattice apron below the top, after the carved panels on the reference table: a walnut fret lattice on each side
     var latC = document.createElement("canvas"); latC.width = latC.height = 256; var lx = latC.getContext("2d");
     lx.clearRect(0, 0, 256, 256); lx.strokeStyle = "#4a2f1c"; lx.lineWidth = 16; lx.lineCap = "square";
@@ -2397,7 +2402,8 @@ Rack: middle</pre>` },
     var jadeTex = new THREE.TextureLoader().load(JADE_IMG);
     var JADE_W = 1600, JADE_H = 900, JADE_CELL_W = 71.62, JADE_CELL_H = 100.27, JADE_ORIGIN_X = 48.0, JADE_ORIGIN_Y = 48.93, JADE_COLS = 21;
     var tableHue = Math.random();   // a random colour each load, tinting the jade pattern and the floor
-    var jadeMat = new THREE.MeshStandardMaterial({ map: jadeTex, color: new THREE.Color().setHSL(tableHue, 0.6, 0.6), roughness: 0.45, metalness: 0 });
+    // the same malachite picture also drives the normal and roughness maps, so the surface carries its grain and sheen
+    var jadeMat = new THREE.MeshStandardMaterial({ map: jadeTex, normalMap: jadeTex, normalScale: new THREE.Vector2(0.6, 0.6), roughnessMap: jadeTex, color: new THREE.Color().setHSL(tableHue, 0.6, 0.6), roughness: 1.0, metalness: 0 });
     var pieceCounter = 0;
     // shuffled deck of face cells: every piece draws one, so faces are mixed across the whole table
     var faceDeck = [];
