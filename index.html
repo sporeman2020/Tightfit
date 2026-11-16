@@ -2403,7 +2403,7 @@ Rack: middle</pre>` },
     var JADE_W = 1600, JADE_H = 900, JADE_CELL_W = 71.62, JADE_CELL_H = 100.27, JADE_ORIGIN_X = 48.0, JADE_ORIGIN_Y = 48.93, JADE_COLS = 21;
     var tableHue = Math.random();   // a random colour each load, tinting the jade pattern and the floor
     // the same malachite picture also drives the normal and roughness maps, so the surface carries its grain and sheen
-    var jadeMat = new THREE.MeshStandardMaterial({ map: jadeTex, normalMap: jadeTex, normalScale: new THREE.Vector2(0.6, 0.6), roughnessMap: jadeTex, color: new THREE.Color().setHSL(tableHue, 0.6, 0.6), roughness: 1.0, metalness: 0 });
+    var jadeMat = new THREE.MeshStandardMaterial({ map: jadeTex, normalMap: jadeTex, normalScale: new THREE.Vector2(0.15, 0.15), roughnessMap: jadeTex, color: new THREE.Color().setHSL(tableHue, 0.6, 0.75), roughness: 1.0, metalness: 0 });
     var pieceCounter = 0;
     // shuffled deck of face cells: every piece draws one, so faces are mixed across the whole table
     var faceDeck = [];
