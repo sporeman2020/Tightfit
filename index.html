@@ -794,6 +794,57 @@ Rack: middle</pre>` },
     }
   }, true);
 
+  // Shake gesture: hold the right mouse button and shake sideways. Every open window piles up above Tightfit and
+  // spins in a random direction, then they scatter across the desk.
+  (function () {
+    const desk = document.getElementById("desk");
+    let g = null;          // the current right-button hold
+    let gestured = false;  // a right-button shake happened, so its context menu is suppressed
+    function shakeStack() {
+      const vid = videoWin.getBoundingClientRect(), dr = desk.getBoundingClientRect();
+      const cx = vid.left + vid.width / 2 - dr.left, cy = vid.top + vid.height / 2 - dr.top;
+      const wins = [...desk.querySelectorAll(".win:not(.out):not(.player):not(.jam-win)")];
+      wins.forEach((w, i) => {
+        const ww = w.offsetWidth, wh = w.offsetHeight;
+        const spin = (Math.random() < 0.5 ? -1 : 1) * (540 + Math.random() * 360);   // clockwise or counterclockwise
+        w.style.transition = "left .55s ease-out, top .55s ease-out, transform .9s cubic-bezier(.2,.7,.3,1)";
+        w.style.zIndex = 980 + i;   // above Tightfit, in a pile
+        w.style.left = (cx - ww / 2 + (Math.random() * 8 - 4)) + "px";
+        w.style.top = (cy - wh / 2 + (Math.random() * 8 - 4)) + "px";
+        w.style.transform = "rotate(" + spin + "deg)";
+      });
+      setTimeout(() => {   // then redistribute them across the desk
+        wins.forEach(w => {
+          const x = Math.random() * Math.max(0, desk.clientWidth - w.offsetWidth);
+          const y = Math.random() * Math.max(0, desk.clientHeight - w.offsetHeight - 60);
+          w.style.transition = "left .8s ease-in-out, top .8s ease-in-out, transform .8s ease-in-out";
+          w.style.left = x + "px";
+          w.style.top = y + "px";
+          w.style.transform = "rotate(" + (Math.random() * 12 - 6) + "deg)";
+          w.style.zIndex = ++topZ;
+        });
+      }, 1300);
+    }
+    window.addEventListener("pointerdown", e => {
+      if (e.button === 2) g = { x: e.clientX, dir: 0, flips: [] };
+    }, true);
+    window.addEventListener("pointermove", e => {
+      if (!g) return;
+      const dx = e.clientX - g.x;
+      if (Math.abs(dx) < 6) return;
+      const dir = dx > 0 ? 1 : -1;
+      if (g.dir && dir !== g.dir) {
+        const now = performance.now();
+        g.flips = g.flips.filter(t => now - t < 1000).concat(now);
+        gestured = true;
+        if (g.flips.length >= 4) { g = null; shakeStack(); return; }   // one shake per hold
+      }
+      g.dir = dir; g.x = e.clientX;
+    }, true);
+    window.addEventListener("pointerup", e => { if (e.button === 2) g = null; }, true);
+    window.addEventListener("contextmenu", e => { if (gestured) e.preventDefault(); gestured = false; }, true);
+  })();
+
   // Drag any element by a handle (title bar, or the whole element when no handle is given).
   // The screen is a border: windows and notes can be dragged anywhere inside it (above the taskbar), never off it.
   // x and y are the wanted offsetLeft/offsetTop; the value to put in style.left/top comes back (margins and any
