@@ -118,7 +118,7 @@
 <rect x="146.10" y="1261.50" width="19.80" height="63.00" rx="0.00" fill="rgba(30,120,70,1.000)"/>
 <rect x="318.10" y="1181.50" width="19.80" height="63.00" rx="0.00" fill="rgba(30,120,70,1.000)"/>
 <rect x="430.10" y="1181.50" width="19.80" height="63.00" rx="0.00" fill="rgba(30,120,70,1.000)"/>
-<rect x="374.10" y="1221.50" width="19.80" height="63.00" rx="0.00" fill="rgba(30,120,70,1.000)"/>
+<rect x="374.10" y="1221.50" width="19.80" height="63.00" rx="0.00" fill="rgba(190,45,40,1.000)"/>
 <rect x="318.10" y="1261.50" width="19.80" height="63.00" rx="0.00" fill="rgba(30,120,70,1.000)"/>
 <rect x="430.10" y="1261.50" width="19.80" height="63.00" rx="0.00" fill="rgba(30,120,70,1.000)"/>
 <rect x="602.10" y="1141.50" width="19.80" height="63.00" rx="0.00" fill="rgba(30,120,70,1.000)"/>
@@ -127,7 +127,7 @@
 <rect x="658.10" y="1141.50" width="19.80" height="63.00" rx="0.00" fill="rgba(30,120,70,1.000)"/>
 <rect x="658.10" y="1221.50" width="19.80" height="63.00" rx="0.00" fill="rgba(30,120,70,1.000)"/>
 <rect x="658.10" y="1301.50" width="19.80" height="63.00" rx="0.00" fill="rgba(30,120,70,1.000)"/>
-<rect x="886.10" y="1141.50" width="19.80" height="63.00" rx="0.00" fill="rgba(30,120,70,1.000)"/>
+<rect x="886.10" y="1141.50" width="19.80" height="63.00" rx="0.00" fill="rgba(190,45,40,1.000)"/>
 <rect x="830.10" y="1221.50" width="19.80" height="63.00" rx="0.00" fill="rgba(30,120,70,1.000)"/>
 <rect x="886.10" y="1221.50" width="19.80" height="63.00" rx="0.00" fill="rgba(30,120,70,1.000)"/>
 <rect x="942.10" y="1221.50" width="19.80" height="63.00" rx="0.00" fill="rgba(30,120,70,1.000)"/>
@@ -143,13 +143,13 @@
 <rect x="1142.10" y="1181.50" width="19.80" height="63.00" rx="0.00" fill="rgba(30,120,70,1.000)"/>
 <rect x="1142.10" y="1261.50" width="19.80" height="63.00" rx="0.00" fill="rgba(30,120,70,1.000)"/>
 <rect x="1342.10" y="1141.50" width="19.80" height="63.00" rx="0.00" fill="rgba(30,120,70,1.000)"/>
-<rect x="1342.10" y="1221.50" width="19.80" height="63.00" rx="0.00" fill="rgba(30,120,70,1.000)"/>
+<rect x="1342.10" y="1221.50" width="19.80" height="63.00" rx="0.00" fill="rgba(190,45,40,1.000)"/>
 <rect x="1342.10" y="1301.50" width="19.80" height="63.00" rx="0.00" fill="rgba(30,120,70,1.000)"/>
 <rect x="1398.10" y="1141.50" width="19.80" height="63.00" rx="0.00" fill="rgba(30,120,70,1.000)"/>
-<rect x="1398.10" y="1221.50" width="19.80" height="63.00" rx="0.00" fill="rgba(30,120,70,1.000)"/>
+<rect x="1398.10" y="1221.50" width="19.80" height="63.00" rx="0.00" fill="rgba(190,45,40,1.000)"/>
 <rect x="1398.10" y="1301.50" width="19.80" height="63.00" rx="0.00" fill="rgba(30,120,70,1.000)"/>
 <rect x="1454.10" y="1141.50" width="19.80" height="63.00" rx="0.00" fill="rgba(30,120,70,1.000)"/>
-<rect x="1454.10" y="1221.50" width="19.80" height="63.00" rx="0.00" fill="rgba(30,120,70,1.000)"/>
+<rect x="1454.10" y="1221.50" width="19.80" height="63.00" rx="0.00" fill="rgba(190,45,40,1.000)"/>
 <rect x="1454.10" y="1301.50" width="19.80" height="63.00" rx="0.00" fill="rgba(30,120,70,1.000)"/>
 <text x="1589.00" y="1253.00" font-family='"Microsoft YaHei", sans-serif' font-size="150" font-weight="bold" fill="rgba(0,0,0,1.000)" text-anchor="start" dominant-baseline="middle">東</text>
 <text x="53.00" y="1611.00" font-family='"Microsoft YaHei", sans-serif' font-size="150" font-weight="bold" fill="rgba(0,0,0,1.000)" text-anchor="start" dominant-baseline="middle">南</text>
