@@ -2478,6 +2478,13 @@ Rack: middle</pre>` },
       dealt.push({ m: m, src: src, to: to, k: dealt.length, extra: extra, edge: edge }); m.visible = false; tableGroup.add(m); } }
     // wall stacks: 17 across, two high, on each side
     // all four sides run 17 stacks at the same spacing, so the ring is a true square (±3.6 along each side)
+    // top-left discard area: 4 columns by 6 rows of empty slots, shown as outlines until discards are dealt in
+    var discardSlotMat = new THREE.LineBasicMaterial({ color: 0x0b2a18 });
+    for (var dc = 0; dc < 4; dc++) for (var dr = 0; dr < 6; dr++) {
+      var slot = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(0.6, 0.45)), discardSlotMat);
+      slot.rotation.x = -Math.PI / 2; slot.position.set(-3.3 + dc * 0.675, 0.03, -2.95 + dr * 0.5);
+      tableGroup.add(slot);
+    }
     // pinwheel, as in the wall guide: each side runs its 17 stacks out to cover one corner
     // North covers top-right, East bottom-right, South bottom-left, West top-left
     wallStack(-3.05, -4.15, 0.5, 0, 17, 0, 1.0, 'N');
