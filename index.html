@@ -1007,7 +1007,18 @@ Rack: middle</pre>` },
   const startList = document.getElementById("startList");
   document.querySelector(".start").addEventListener("click", () => { startMenu.hidden = !startMenu.hidden; });
   // Achievements: shown in the Start menu below the window list
-  const achievements = { "paint-site": { label: "Paint the whole site a single colour", done: false } };
+  const achievements = {
+    "paint-site": { label: "Paint the whole site a single colour", done: false },
+    "defeat-hedron": { label: "Defeat hedron", done: false },
+    "consumed": { label: "Consumed by Hedron", done: false },
+    "mikey": { label: "Hugging Mikey", done: false },
+    "royalty": { label: "Royalty Free Music", done: false },
+    "smoovement": { label: "Smoovement", done: false },
+    "spellcast": { label: "Spellcast", done: false },
+    "mahjong-win": { label: "Win a Mahjong game", done: false },
+    "dog": { label: "Dog", done: false },
+    "movie": { label: "Start the movie", done: false }
+  };
   function renderAchievements() {
     let el = document.getElementById("achList");
     if (!el) return;
@@ -1063,6 +1074,7 @@ Rack: middle</pre>` },
   addStartEntry("Achievements", openAchievements);
   // Tightfit taskbar button always sits in the first slot.
   function setVideo(on) {
+    if (on) unlockAchievement("movie");
     videoWin.hidden = !on;
     videoTask.classList.toggle("active", on);
   }
@@ -1318,6 +1330,7 @@ Rack: middle</pre>` },
 
   // Pressing play: a cursor comes over, pauses the player, and a notice says the music isn't royalty free.
   function showRoyaltyNotice() {
+    unlockAchievement("royalty");
     const n = document.createElement("div");
     n.textContent = "This music isn't royalty free.";
     n.style.cssText = "position:fixed;right:16px;bottom:44px;z-index:2100;background:#d9c3a0;color:#2a0808;border:2px solid #2a0808;box-shadow:0 0 0 2px #ede1e3,0 0 0 4px #2a0808;padding:10px 14px;font:14px 'MGPixel','MS Sans Serif',sans-serif;transition:opacity 0.4s;";
@@ -1485,6 +1498,7 @@ Rack: middle</pre>` },
     const dogTop = vh + dropPx - h;        // the sprite's top edge in the viewport
     bubble.style.top = Math.round(Math.max(12 - dogTop, SNOUT_Y * s - BUB_H * 1.0)) + "px"; // tail by the nose, kept on screen
     dogEl.classList.add("go");
+    unlockAchievement("dog");
     const off = "translateX(" + -(left + w + 40) + "px)";
     // 2.5s in, then she stays put (3 to 4 minutes in all unless she is swiped away), then 2.5s out.
     const IN = 2500, OUT = 2500, dur = Math.round((180 + Math.random() * 60) * 1000);
@@ -1789,7 +1803,7 @@ Rack: middle</pre>` },
       aftermath = false;
     })();
   }
-  window.tightfitAfterGrab = runAftermath;
+  window.tightfitAfterGrab = function (c) { unlockAchievement("mikey"); return runAftermath(c); };
   // Going full screen switches both effects off straight away: Big Dog and the Maya windows are removed, and the
   // crash screen is dropped.
   function stopFx() {
@@ -2685,6 +2699,7 @@ Rack: middle</pre>` },
     function gameAfter() {
       var S = GM.G;
       while (S.phase === "call" && S.queue.length && S.queue[0].player === 0) MJG.humanCall(S, null);   // calls are not offered yet, so you pass
+      if (S.over && S.result && S.result.winner === 0) unlockAchievement("mahjong-win");
       gameRender();
     }
     function gameDiscard(d) {
