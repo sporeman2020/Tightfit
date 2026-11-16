@@ -2459,7 +2459,7 @@ Rack: middle</pre>` },
     function turnSeat(T) { return turnOrder[Math.floor((T - 5) / 5) % turnOrder.length]; }
     var raf = 0, t0 = performance.now();
     // the arrow floats above the table and spins to choose the starting player; the pieces appear after it settles
-    var startSeats = [[0, 1], [1, 0], [0, -1], [-1, 0]], startNames = ['South (you)', 'East', 'North', 'West'];
+    var startSeats = [[0, 1], [1, 0], [0, -1], [-1, 0]], startNames = ['You', 'Right', 'Center', 'Left'];
     var starter = Math.floor(Math.random() * 4);
     var arrowGroup = new THREE.Group(); arrowGroup.position.set(0, 2.2, 0); sc2.add(arrowGroup);
     // a flat black arrow lying in the table plane, pointing along +x
@@ -2508,7 +2508,7 @@ Rack: middle</pre>` },
         var at = Math.min(1, T / 4), eo = 1 - Math.pow(1 - at, 3);
         var dd = startSeats[starter], thetaT = Math.atan2(-dd[1], dd[0]);
         arrowGroup.rotation.y = (thetaT + 12 * Math.PI) * eo;
-        if (at >= 1) { arrowDone = true; startLbl.textContent = startNames[starter] + ' is East'; startLbl.style.opacity = '1'; setupWinds(); }
+        if (at >= 1) { arrowDone = true; startLbl.textContent = startNames[starter] + (starter === 0 ? ' are' : ' is') + ' East'; startLbl.style.opacity = '1'; setupWinds(); }
       }
       if (arrowDone && T > 4.5) { if (!westSet) { westSet = true; setupWestWall(); } tableGroup.visible = true; }
       // dealing: each hand tile rises from the table centre and slides into its seat, one after another after the lamp
