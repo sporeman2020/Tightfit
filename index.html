@@ -2681,6 +2681,10 @@ Rack: middle</pre>` },
     var gameHud = document.createElement("div");
     gameHud.style.cssText = "position:absolute;left:16px;top:16px;font:16px MGPixel, monospace;color:#fff;background:rgba(0,0,0,.45);padding:6px 10px;pointer-events:none;";
     ov.appendChild(gameHud);
+    // the call buttons sit at the bottom of the screen, just above your hand
+    var callPanel = document.createElement("div");
+    callPanel.style.cssText = "position:absolute;left:50%;transform:translateX(-50%);bottom:86px;display:none;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;font:14px MGPixel, monospace;color:#fff;background:rgba(0,0,0,.5);padding:8px 12px;";
+    ov.appendChild(callPanel);
     function gameTile(t) {
       var g = makePiece();
       var bgeo = new THREE.ExtrudeGeometry(pieceRound(0.5, 0.7, 0.06), { depth: 0.34 / 3, bevelEnabled: false, curveSegments: 3 });
@@ -2714,27 +2718,28 @@ Rack: middle</pre>` },
       });
       var names = ["You", "Right", "Center", "Left"];
       var callWait = S.phase === "call" && S.queue.length && S.queue[0].player === 0;
-      gameHud.innerHTML = "";
-      if (callWait) { gameCallButtons(S); gameHud.style.pointerEvents = "auto"; }
-      else { gameHud.textContent = S.over ? "Hand over" : (S.phase === "discard" && S.turn === 0 ? "Your turn: click a tile to discard" : "Waiting for " + names[S.turn]); gameHud.style.pointerEvents = "none"; }
+      callPanel.innerHTML = ""; callPanel.style.display = callWait ? "flex" : "none";
+      if (callWait) gameCallButtons(S);
+      gameHud.textContent = S.over ? "Hand over" : (S.phase === "discard" && S.turn === 0 ? "Your turn: click a tile to discard" : (callWait ? "Call available" : "Waiting for " + names[S.turn]));
+      gameHud.style.pointerEvents = "none";
     }
     function gameCallButtons(S) {
       var opts = S.queue[0].opts;
       function button(text, fn) {
         var b = document.createElement("button");
         b.type = "button"; b.textContent = text;
-        b.style.cssText = "display:block;margin:4px 0;font:14px MGPixel, monospace;background:#ede1e3;color:#2a0808;border:0;padding:4px 10px;cursor:pointer;";
+        b.style.cssText = "display:inline-block;margin:0;font:14px MGPixel, monospace;background:#ede1e3;color:#2a0808;border:0;padding:4px 10px;cursor:pointer;";
         b.addEventListener("click", function () { fn(); gameAfter(); });
-        gameHud.appendChild(b);
+        callPanel.appendChild(b);
       }
-      var head = document.createElement("div"); head.textContent = "Call available:"; gameHud.appendChild(head);
+      var head = document.createElement("span"); head.textContent = "Call:"; callPanel.appendChild(head);
       opts.forEach(function (o) {
         if (o.type === "ron") button("Mahjong (ron)", function () { MJG.humanCall(S, o); });
         else if (o.type === "pon") button("Pon", function () { MJG.humanCall(S, o); });
         else if (o.type === "kan") button("Kan", function () { MJG.humanCall(S, o); });
         else if (o.type === "chi") button("Chi " + o.seq.map(function (t) { return MJ.LABEL[t]; }).join(" "), function () { MJG.humanCall(S, o); });
       });
-      button("Pass", function () { MJG.humanCall(S, null); });
+      button("Skip", function () { MJG.humanCall(S, null); });
     }
     function gameStart(starter) {
       GM.started = true;
