@@ -2672,8 +2672,8 @@ Rack: middle</pre>` },
         if (c.userData.idx === 7) c.rotation.y += Math.PI / 2;
       });
     }
-    var pointerLow = false, zoomLerp = 0;
-    function onMove(e) { pointerLow = e.clientY > window.innerHeight * 0.75; }
+    var pointerLow = false, zoomLerp = 0, pointerHigh = false, topLerp = 0;
+    function onMove(e) { pointerLow = e.clientY > window.innerHeight * 0.75; pointerHigh = e.clientY < window.innerHeight * 0.25; }
     window.addEventListener("mousemove", onMove);
     // ---- the rules engine runs the turns; the table shows its hands and discards ----
     var GM = { G: null, started: false, handMeshes: [], discardMeshes: [] };
@@ -2867,6 +2867,9 @@ Rack: middle</pre>` },
       // pointer near the bottom of the page zooms in on your tiles
       zoomLerp += ((pointerLow && GM.G && GM.G.turn === 0 && GM.G.phase === 'discard' && !GM.G.over ? 1 : 0) - zoomLerp) * 0.06;   // zooms in toward your tiles on your turn   // the camera only moves in once you have played a card
       cam2.position.lerp(new THREE.Vector3(0, 3.4, 7.4), zoomLerp * 0.85);
+      // pointer up near the top: the camera rises toward a top-down view over the discards
+      topLerp += ((pointerHigh ? 1 : 0) - topLerp) * 0.06;
+      cam2.position.lerp(new THREE.Vector3(0, 9.5, 2.5), topLerp * 0.7);
       // whose turn it is: the camera turns a little toward the left or right player; the opposite player keeps the view centred
       // your turn: look at your own pieces; another player's turn: pan up and look straight at that person
       var seat = T < 5 ? "player" : turnSeat(T);
