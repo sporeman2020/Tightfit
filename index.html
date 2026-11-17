@@ -2457,8 +2457,8 @@ Rack: middle</pre>` },
     var base = new THREE.Mesh(new THREE.BoxGeometry(12, 0.06, 12), grout); base.position.y = -0.03; sc2.add(base);
     // walnut: bevelled rim that sits slightly past the tile edge, and one solid core below
     var walnut = new THREE.MeshStandardMaterial({ color: 0x4a2f1c, roughness: 0.55, metalness: 0 });
-    var rimShape = new THREE.Shape(); rimShape.moveTo(-6.4, -4.9); rimShape.lineTo(6.4, -4.9); rimShape.lineTo(6.4, 4.9); rimShape.lineTo(-6.4, 4.9); rimShape.lineTo(-6.4, -4.9);
-    var rimHole = new THREE.Path(); rimHole.moveTo(-6.0, -4.5); rimHole.lineTo(-6.0, 4.5); rimHole.lineTo(6.0, 4.5); rimHole.lineTo(6.0, -4.5); rimHole.lineTo(-6.0, -4.5);
+    var rimShape = new THREE.Shape(); rimShape.moveTo(-6.4, -6.4); rimShape.lineTo(6.4, -6.4); rimShape.lineTo(6.4, 6.4); rimShape.lineTo(-6.4, 6.4); rimShape.lineTo(-6.4, -6.4);
+    var rimHole = new THREE.Path(); rimHole.moveTo(-6.0, -6.0); rimHole.lineTo(-6.0, 6.0); rimHole.lineTo(6.0, 6.0); rimHole.lineTo(6.0, -6.0); rimHole.lineTo(-6.0, -6.0);
     rimShape.holes.push(rimHole);
     var rim = new THREE.Mesh(new THREE.ExtrudeGeometry(rimShape, { depth: 0.1, bevelEnabled: true, bevelThickness: 0.05, bevelSize: 0.05, bevelSegments: 3, curveSegments: 4 }), walnut);
     rim.rotation.x = -Math.PI / 2; rim.position.y = 0.01; sc2.add(rim);
