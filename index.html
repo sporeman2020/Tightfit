@@ -2707,6 +2707,11 @@ Rack: middle</pre>` },
         tableGroup.add(m); GM.handMeshes.push(m);
         dealt.push({ m: m, src: { position: to.clone() }, to: to, k: 0, extra: false, edge: "S", base: m.scale.clone(), hov: 0, game: true, tile: t });
       });
+      var consumed = 136 - S.wall.length, wallEdge = ["S", "E", "N", "W"];
+      for (var jx = 0; jx < consumed; jx++) {
+        var st2 = findSrc(wallEdge[Math.floor(jx / 34)], Math.floor((jx % 34) / 2), (jx % 34) % 2 === 0 ? 1 : 0);
+        if (st2) st2.visible = false;   // this stack has been drawn
+      }
       S.discards.forEach(function (pile, seat) {
         pile.forEach(function (t, k) {
           var m = gameTile(t), g = DISC[seat], dc = k % 6, dr = Math.floor(k / 6);
@@ -2749,10 +2754,23 @@ Rack: middle</pre>` },
       if (GM.G) { GM.G.hands[0].sort(function (x, y) { return x - y; }); gameRender(); }
     });
     document.body.appendChild(sortBtn);
+    function setBotFaces() {
+      var S = GM.G, rowSeat = { E: 1, N: 2, W: 3 };
+      dealt.forEach(function (d) {
+        if (d.game || rowSeat[d.edge] === undefined) return;
+        var hand = S.hands[rowSeat[d.edge]];
+        if (d.ri >= hand.length) { d.discarded = true; d.m.visible = false; return; }
+        var t = hand[d.ri], back = d.m.children[1];
+        var bgeo = new THREE.ExtrudeGeometry(pieceRound(0.5, 0.7, 0.06), { depth: 0.34 / 3, bevelEnabled: false, curveSegments: 3 });
+        typeUV(bgeo, t);
+        back.geometry.dispose(); back.geometry = bgeo; back.material = typeMats[t];
+      });
+    }
     function gameStart(starter) {
       GM.started = true;
       dealt.forEach(function (d) { if (d.edge === "S" && !d.game) d.discarded = true; });   // the dealt hand gives way to the engine's hand
       GM.G = MJG.newGame({ human: 0, dealer: starter });
+      setBotFaces();
       gameRender();
     }
     function gameAfter() {
