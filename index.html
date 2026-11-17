@@ -1,4 +1,5 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}body.peek-on .desk > *, body.peek-on .video-win { visibility: hidden !important; }
+#peekTab.lit { box-shadow: inset -2px -2px 0 #2a0808, inset 2px 2px 0 #ede1e3; }
 </style></head><body>
 <!doctype html>
 <html lang="en">
@@ -1054,13 +1055,13 @@ Rack: middle</pre>` },
     var peek = document.createElement("div");
     peek.id = "peekTab";
     peek.setAttribute("aria-label", "Hover to hide the windows");
-    peek.style.cssText = "width:14px;align-self:stretch;margin:0;flex:0 0 auto;border:0;background:#b4b4b4;cursor:pointer;";
+    peek.style.cssText = "width:8px;align-self:stretch;margin:0;flex:0 0 auto;box-sizing:border-box;border:1px solid #8a8a8a;background:transparent;cursor:pointer;";
     var latched = false;   // a click locks the windows hidden until the next click
-    peek.addEventListener("mouseenter", function () { document.body.classList.add("peek-on"); });
-    peek.addEventListener("mouseleave", function () { if (!latched) document.body.classList.remove("peek-on"); });
+    peek.addEventListener("mouseenter", function () { document.body.classList.add("peek-on"); peek.classList.add("lit"); });
+    peek.addEventListener("mouseleave", function () { if (!latched) { document.body.classList.remove("peek-on"); peek.classList.remove("lit"); } });
     peek.addEventListener("click", function () {
       latched = !latched;
-      document.body.classList.toggle("peek-on", latched);
+      document.body.classList.toggle("peek-on", latched); peek.classList.toggle("lit", latched);
     });
     document.querySelector(".taskbar").appendChild(peek);
   })();
