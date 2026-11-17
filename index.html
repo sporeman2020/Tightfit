@@ -1054,7 +1054,7 @@ Rack: middle</pre>` },
     var peek = document.createElement("div");
     peek.id = "peekTab";
     peek.setAttribute("aria-label", "Hover to hide the windows");
-    peek.style.cssText = "width:12px;height:30px;margin-left:6px;flex:0 0 auto;align-self:center;border:2px solid #2a0808;background:#ede1e3;cursor:pointer;";
+    peek.style.cssText = "width:14px;align-self:stretch;margin:0;flex:0 0 auto;border:0;background:#b4b4b4;cursor:pointer;";
     var latched = false;   // a click locks the windows hidden until the next click
     peek.addEventListener("mouseenter", function () { document.body.classList.add("peek-on"); });
     peek.addEventListener("mouseleave", function () { if (!latched) document.body.classList.remove("peek-on"); });
