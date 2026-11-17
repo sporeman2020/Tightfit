@@ -2880,7 +2880,7 @@ Rack: middle</pre>` },
       cam2.position.lerp(new THREE.Vector3(0, 9.5, 2.5), topLerp * 0.7);
       // whose turn it is: the camera turns a little toward the left or right player; the opposite player keeps the view centred
       // your turn: look at your own pieces; another player's turn: pan up and look straight at that person
-      var seat = "player";   // the clock no longer swings the camera between seats
+      var seat = GM.G ? ["player", "right", "middle", "left"][GM.G.turn] : "player";   // the camera follows whose turn it is, not a timer
       var tgt = seat === "left" ? [-6.4, 1.6, 0.6] : seat === "right" ? [6.4, 1.6, 0.6] : seat === "middle" ? [0, 1.6, -6.8] : [0, 0.3, 3.2];
       // pointer at the left or right edge: the camera focuses on that player
       if (pointerLeft) tgt = [-6.4, 1.6, 0.6]; else if (pointerRight) tgt = [6.4, 1.6, 0.6];
