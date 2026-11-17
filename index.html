@@ -17,6 +17,7 @@
 })();
 </script>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/peerjs/1.5.4/peerjs.min.js"></script>
 <link rel="icon" type="image/png" href="favicon.png">
 <title>Bake Desktop</title>
 <style>
@@ -2593,7 +2594,7 @@ Rack: middle</pre>` },
       for (var i = 0; i < n; i++) for (var k = 0; k < 2; k++) {
         var m = makePiece(); m.scale.set(Math.max(Math.abs(dx), Math.abs(dz)) * 0.9 / 0.5 * 0.8, 0.765 * 0.8, 0.765 * 0.8);
         m.rotation.order = "YXZ"; m.rotation.x = -Math.PI / 2; m.rotation.y = yaw; m.userData.side = (yaw === Math.PI / 2) ? 'west' : 'other'; m.userData.idx = i; m.userData.layer = k; m.userData.edge = edge;
-        m.position.set(x0 + dx * i * 0.72, 0.14 + k * 0.27, z0 + dz * i * 0.72);   // stacks touch along their length (0.36 apart)   // layers lifted so the tile thickness (0.26) does not overlap
+        m.position.set(x0 + dx * i * 0.72, 0.14 + k * 0.208, z0 + dz * i * 0.72);   // stacks touch along their length (0.36 apart); layers touch face to face (0.208 = the tile's real thickness)
         tableGroup.add(m);
       }
     }    // hand tiles are dealt: each one starts at the table centre and slides to its place (see frame)
@@ -2604,7 +2605,7 @@ Rack: middle</pre>` },
       tableGroup.children.forEach(function (c) { if (c.userData.edge === edge && c.userData.idx === idx && c.userData.layer === L) found = c; });
       return found;
     }
-    function wall(x0, z0, dx, dz, n, rot, flip, edge) { if (flip === undefined) flip = true; for (var i = 0; i < n; i++) { var m = makePiece(); m.scale.set(Math.max(Math.abs(dx), Math.abs(dz)) * 0.9 / 0.5 * 0.8, 0.765 * 0.8, 0.765 * 0.8); m.rotation.y = rot + (flip ? Math.PI : 0); var to = new THREE.Vector3(x0 + dx * i * 0.9, 0.2754, z0 + dz * i * 0.9);
+    function wall(x0, z0, dx, dz, n, rot, flip, edge) { if (flip === undefined) flip = true; for (var i = 0; i < n; i++) { var m = makePiece(); m.scale.set(Math.max(Math.abs(dx), Math.abs(dz)) * 0.9 / 0.5 * 0.8, 0.765 * 0.8, 0.765 * 0.8); m.rotation.y = rot + (flip ? Math.PI : 0); var to = new THREE.Vector3(x0 + dx * i * 0.72, 0.2754, z0 + dz * i * 0.72);   // hand rows: tiles touch (0.324 apart)
       // each tile is taken from the wall on its own side of the table, at the height of the top layer
       // the 14th tile (the dealer's extra) comes from the bottom layer at the end of the wall
       var extra = i === 13;
@@ -2626,14 +2627,14 @@ Rack: middle</pre>` },
     }
     // pinwheel, as in the wall guide: each side runs its 17 stacks out to cover one corner
     // North covers top-right, East bottom-right, South bottom-left, West top-left
-    wallStack(3.077, -3.077, -0.5, 0, 17, 0, 1.0, 'N');
-    wallStack(-3.077, 3.077, 0.5, 0, 17, Math.PI, 1.0, 'S');
-    wallStack(-3.077, -3.077, 0, 0.5, 17, Math.PI / 2, undefined, 'W');
-    wallStack(3.077, 3.077, 0, -0.5, 17, -Math.PI / 2, undefined, 'E');
+    wallStack(3.094, -3.06, -0.5, 0, 17, 0, 1.0, 'N');
+    wallStack(-3.094, 3.06, 0.5, 0, 17, Math.PI, 1.0, 'S');
+    wallStack(-3.06, -3.094, 0, 0.5, 17, Math.PI / 2, undefined, 'W');
+    wallStack(3.06, 3.094, 0, -0.5, 17, -Math.PI / 2, undefined, 'E');
 
     // each player's 13 tiles, centred in front of their wall
-    wall(-2.93, -5.2, 0.45, 0, 14, Math.PI, undefined, 'N'); wall(-2.93, 5.2, 0.45, 0, 14, 0, undefined, 'S');   // your row: white faces toward you
-    wall(-6.3, 2.93, 0, -0.45, 14, -Math.PI / 2, undefined, 'W'); wall(6.3, -2.93, 0, 0.45, 14, Math.PI / 2, undefined, 'E');
+    wall(-2.106, -5.2, 0.45, 0, 14, Math.PI, undefined, 'N'); wall(-2.106, 5.2, 0.45, 0, 14, 0, undefined, 'S');   // your row: white faces toward you
+    wall(-6.3, 2.106, 0, -0.45, 14, -Math.PI / 2, undefined, 'W'); wall(6.3, -2.106, 0, 0.45, 14, Math.PI / 2, undefined, 'E');
     // the people at the table: person 2 opposite, person 3 on the left, person 3 flipped on the right
     var SIL = { p2: "data:image/png;base64,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", p3: "data:image/png;base64,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", p3f: "data:image/png;base64,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" };
     // each other player is a flat figure, set below the table line and turned toward their own part of the table
@@ -2663,6 +2664,18 @@ Rack: middle</pre>` },
     startLbl.style.cssText = "position:absolute;left:0;right:0;top:14%;text-align:center;font:20px MGPixel, monospace;color:#fff;letter-spacing:.06em;opacity:0;transition:opacity .6s;pointer-events:none;";
     ov.appendChild(startLbl);
     var arrowDone = false, westSet = false;
+    // the order tiles leave the walls, as the engine deals them: 4 to each seat in turn (from East, clockwise) for three rounds,
+    // then one each, then East's extra tile. Each tile gets its place in that order (d.order)
+    function assignDealOrder(starter) {
+      var edges = ['S', 'E', 'N', 'W'];
+      var seats = [0, 1, 2, 3].map(function (i) { return (starter + i) % 4; });
+      var seq = [];
+      function take(edge, ri) { dealt.forEach(function (d) { if (!d.game && d.edge === edge && d.ri === ri) seq.push(d); }); }
+      for (var r = 0; r < 3; r++) seats.forEach(function (sp) { for (var j = 0; j < 4; j++) take(edges[sp], r * 4 + j); });
+      seats.forEach(function (sp) { take(edges[sp], 12); });
+      take(edges[starter], 13);
+      seq.forEach(function (d, i) { d.order = i; });
+    }
     // the west wall (opposite East): seven stacks shift toward the top-left, the third is flipped, the eighth faces long
     function setupWestWall() {
       tableGroup.children.forEach(function (c) {
@@ -2677,14 +2690,45 @@ Rack: middle</pre>` },
     window.addEventListener("mousemove", onMove);
     // ---- the rules engine runs the turns; the table shows its hands and discards ----
     var GM = { G: null, started: false, handMeshes: [], discardMeshes: [] };
-    var DISC = [[-1.9, 2.2, 0], [2.2, 2.2, -Math.PI / 2], [2.0, -1.9, Math.PI], [-2.2, -1.9, Math.PI / 2]];   // grids by seat: South, East side, North, West
+    var DISC = [[-1.9, 1.9, 0], [1.9, 1.9, Math.PI / 2], [1.9, -1.9, Math.PI], [-1.9, -1.9, -Math.PI / 2]];   // grids by seat: South, East side, North, West
     var gameHud = document.createElement("div");
     gameHud.style.cssText = "position:absolute;left:16px;top:16px;font:16px MGPixel, monospace;color:#fff;background:rgba(0,0,0,.45);padding:6px 10px;pointer-events:none;";
     ov.appendChild(gameHud);
     // the call buttons sit at the bottom of the screen, just above your hand
     var callPanel = document.createElement("div");
-    callPanel.style.cssText = "position:absolute;left:50%;transform:translateX(-50%);bottom:86px;display:none;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;font:14px MGPixel, monospace;color:#fff;background:rgba(0,0,0,.5);padding:8px 12px;";
+    callPanel.style.cssText = "position:absolute;left:16px;bottom:16px;display:none;grid-template-columns:1fr 1fr;gap:10px;font:16px MGPixel, monospace;background:#4a2e1a;border:3px solid #2a1808;box-shadow:inset 0 0 0 2px #6b4628;padding:14px;";
     ov.appendChild(callPanel);
+    // the name of a hovered hand tile, in a slightly see-through black box above it
+    function tileName(t) {
+      if (t <= 8) return (t + 1) + ' Character';
+      if (t <= 17) return (t - 8) + ' Circle';
+      if (t <= 26) return (t - 17) + ' Bamboo';
+      if (t <= 30) return ['East Wind', 'South Wind', 'West Wind', 'North Wind'][t - 27];
+      return ['White Dragon', 'Green Dragon', 'Red Dragon'][t - 31];
+    }
+    var tileLabel = document.createElement('div');
+    tileLabel.style.cssText = "position:absolute;left:0;top:0;display:none;transform:translate(-50%,-100%);pointer-events:none;background:rgba(0,0,0,.6);color:#fff;font:14px MGPixel, monospace;padding:4px 8px;white-space:nowrap;";
+    ov.appendChild(tileLabel);
+    // Ron and Tsumo sit in the bottom right, only when you can take them
+    var winPanel = document.createElement("div");
+    winPanel.style.cssText = "position:absolute;right:16px;bottom:16px;display:none;flex-direction:column;gap:10px;font:16px MGPixel, monospace;background:#4a2e1a;border:3px solid #2a1808;box-shadow:inset 0 0 0 2px #6b4628;padding:14px;";
+    ov.appendChild(winPanel);
+    // your hand, as a row of tiles in the UI at the bottom (spaced a touch apart); clicking one discards it
+    var handBar = document.createElement("div");
+    handBar.style.cssText = "position:absolute;left:50%;transform:translateX(-50%);bottom:56px;display:none;gap:5px;max-width:calc(100% - 340px);overflow-x:auto;padding:6px;background:rgba(40,22,10,.55);";
+    ov.appendChild(handBar);
+    function renderHandBar(S) {
+      handBar.innerHTML = "";
+      if (!S || !S.hands || !S.hands[0]) { handBar.style.display = "none"; return; }
+      handBar.style.display = "flex";
+      S.hands[0].forEach(function (t) {
+        var c = document.createElement("button");
+        c.type = "button"; c.textContent = tileName(t);
+        c.style.cssText = "flex:0 0 auto;width:66px;height:86px;padding:4px;background:#f1e7d0;color:#2a0808;border:2px solid #8a6a3a;border-radius:5px;font:12px MGPixel, monospace;line-height:1.2;cursor:pointer;box-shadow:inset -3px -3px 0 rgba(0,0,0,.2);";
+        c.addEventListener("click", function () { gameDiscard({ game: true, tile: t }); });
+        handBar.appendChild(c);
+      });
+    }
     function gameTile(t) {
       var g = makePiece();
       var bgeo = new THREE.ExtrudeGeometry(pieceRound(0.5, 0.7, 0.06), { depth: 0.34 / 3, bevelEnabled: false, curveSegments: 3 });
@@ -2693,20 +2737,15 @@ Rack: middle</pre>` },
       g.scale.set(0.648, 0.612, 0.612);
       return g;
     }
+    // a hand is centred on the table: each tile is one tile-width (0.324) from the next, so they touch
+    function handX(i, n) { return (i - (n - 1) / 2) * 0.324; }
     function gameRender() {
       var S = GM.G; if (!S) return;
       hoverD = null;
       GM.handMeshes.forEach(function (m) { tableGroup.remove(m); }); GM.handMeshes = [];
       GM.discardMeshes.forEach(function (m) { tableGroup.remove(m); }); GM.discardMeshes = [];
       dealt = dealt.filter(function (d) { return !d.game; });
-      S.hands[0].forEach(function (t, i) {
-        var m = gameTile(t);
-        m.rotation.order = "YXZ"; m.rotation.set(0, Math.PI, 0);
-        var to = new THREE.Vector3(-2.93 + 0.45 * i, 0.2754, 5.2);
-        m.position.copy(to);
-        tableGroup.add(m); GM.handMeshes.push(m);
-        dealt.push({ m: m, src: { position: to.clone() }, to: to, k: 0, extra: false, edge: "S", base: m.scale.clone(), hov: 0, game: true, tile: t });
-      });
+      renderHandBar(S);   // your hand is shown in the UI, not on the table
       var consumed = 136 - S.wall.length, wallEdge = ["S", "E", "N", "W"];
       for (var jx = 0; jx < consumed; jx++) {
         var st2 = findSrc(wallEdge[Math.floor(jx / 34)], Math.floor((jx % 34) / 2), (jx % 34) % 2 === 0 ? 1 : 0);
@@ -2723,28 +2762,44 @@ Rack: middle</pre>` },
       });
       var names = ["You", "Right", "Center", "Left"];
       var callWait = S.phase === "call" && S.queue.length && S.queue[0].player === 0;
-      callPanel.innerHTML = ""; callPanel.style.display = callWait ? "flex" : "none";
+      var canRon = callWait && S.queue[0].opts.some(function (o) { return o.type === "ron"; });
+      var canTsumo = !S.over && S.canTsumo && S.turn === 0;
+      var canRiichi = !S.over && S.phase === "discard" && S.turn === 0 && !S.riichi[0] && S.hands[0].some(function (t) { return MJG.canRiichi(S, 0, t); });
+      callPanel.innerHTML = ""; winPanel.innerHTML = "";
+      callPanel.style.display = (callWait || canRiichi) ? "grid" : "none";
       if (callWait) gameCallButtons(S);
+      if (canRiichi) callPanel.appendChild(panelButton("Riichi", "#c8452f", function () { GM.riichiMode = true; gameRender(); }));
+      if (canRon) winPanel.appendChild(panelButton("Ron", "#c8452f", function () { actCall(S.queue[0].opts.filter(function (o) { return o.type === "ron"; })[0]); gameAfter(); }));
+      if (canTsumo) winPanel.appendChild(panelButton("Tsumo", "#f2d200", function () { actTsumo(); gameAfter(); }));
+      winPanel.style.display = (canRon || canTsumo) ? "flex" : "none";
+      callPanel.style.display = callPanel.children.length ? "grid" : "none";   // the left panel only shows when it has a button
       gameHud.textContent = S.over ? "Hand over" : (S.phase === "discard" && S.turn === 0 ? "Your turn: click a tile to discard" : (callWait ? "Call available" : "Waiting for " + names[S.turn]));
+      if (GM.riichiMode && S.phase === "discard" && S.turn === 0) gameHud.textContent = "Riichi: click the tile to discard";
       gameHud.style.pointerEvents = "none";
+    }
+    function panelButton(text, col, fn) {
+      var b = document.createElement("button");
+      b.type = "button"; b.textContent = text;
+      b.style.cssText = "display:block;margin:0;font:18px MGPixel, monospace;font-weight:bold;background:" + col + ";color:#111;border:0;padding:12px 18px;min-width:120px;cursor:pointer;box-shadow:inset -3px -3px 0 rgba(0,0,0,.35);";
+      b.addEventListener("click", fn);
+      return b;
     }
     function gameCallButtons(S) {
       var opts = S.queue[0].opts;
-      function button(text, fn) {
+      function button(text, fn, col) {
         var b = document.createElement("button");
         b.type = "button"; b.textContent = text;
-        b.style.cssText = "display:inline-block;margin:0;font:14px MGPixel, monospace;background:#ede1e3;color:#2a0808;border:0;padding:4px 10px;cursor:pointer;";
+        b.style.cssText = "display:block;margin:0;font:18px MGPixel, monospace;font-weight:bold;background:" + (col || "#cfc5b5") + ";color:#111;border:0;padding:12px 18px;min-width:120px;cursor:pointer;box-shadow:inset -3px -3px 0 rgba(0,0,0,.35);";
         b.addEventListener("click", function () { fn(); gameAfter(); });
         callPanel.appendChild(b);
       }
-      var head = document.createElement("span"); head.textContent = "Call:"; callPanel.appendChild(head);
+      
       opts.forEach(function (o) {
-        if (o.type === "ron") button("Mahjong (ron)", function () { MJG.humanCall(S, o); });
-        else if (o.type === "pon") button("Pon", function () { MJG.humanCall(S, o); });
-        else if (o.type === "kan") button("Kan", function () { MJG.humanCall(S, o); });
-        else if (o.type === "chi") button("Chi " + o.seq.map(function (t) { return MJ.LABEL[t]; }).join(" "), function () { MJG.humanCall(S, o); });
+        if (o.type === "ron") return;   // ron is in the bottom-right panel
+        else if (o.type === "pon") button("Pon", function () { actCall(o); }, "#f2d200");
+        else if (o.type === "kan") button("Kan", function () { actCall(o); }, "#3aa846");
+        else if (o.type === "chi") button("Chi " + o.seq.map(function (t) { return MJ.LABEL[t]; }).join(" "), function () { actCall(o); }, "#2e9db5");
       });
-      button("Skip", function () { MJG.humanCall(S, null); });
     }
     // Sort button at the bottom middle: orders your hand by tile type, ascending
     var sortBtn = document.createElement("button");
@@ -2769,23 +2824,207 @@ Rack: middle</pre>` },
         back.geometry.dispose(); back.geometry = bgeo; back.material = typeMats[t];
       });
     }
+    // ---- peer to peer: the host's browser runs the engine; each joining player sends moves and gets their own view ----
+    var NET = { role: null, peer: null, conns: {}, seats: {}, lobby: false, deadline: 0, timer: null, room: null, lobbyEl: null };
+    NET.humanSeats = function () { var hs = [0]; Object.keys(NET.seats).forEach(function (k) { hs.push(+k); }); return hs; };
+    NET.seatFree = function () { for (var s = 3; s >= 1; s--) if (!NET.seats[s]) return s; return 0; };   // seat 3 is to the host's left, then 2, then 1
+    NET.toHost = function (msg) { var c = NET.conns.host; if (c && c.open) c.send(msg); };
+    // the view for seat m: their own hand, everyone's discards and melds, and only tile counts for hidden hands. Seats are turned so m is seat 0.
+    NET.viewFor = function (S, m) {
+      function rot(a) { return [0, 1, 2, 3].map(function (i) { return a[(m + i) % 4]; }); }
+      var hands = rot(S.hands).map(function (h, i) { return i === 0 ? h.slice() : h.map(function () { return 0; }); });
+      return {
+        hands: hands, melds: rot(S.melds), discards: rot(S.discards), riichi: rot(S.riichi), seatWind: rot(S.seatWind),
+        wall: new Array(S.wall.length).fill(0),
+        turn: (S.turn - m + 4) % 4, dealer: (S.dealer - m + 4) % 4, roundWind: S.roundWind,
+        phase: S.phase, over: S.over,
+        result: S.result ? Object.assign({}, S.result, S.result.winner !== undefined ? { winner: (S.result.winner - m + 4) % 4 } : {}) : null,
+        last: S.last ? { seat: (S.last.seat - m + 4) % 4, t: S.last.t } : null,
+        queue: S.queue.map(function (e) { return { player: (e.player - m + 4) % 4, opts: e.player === m ? e.opts : [] }; }),
+        canTsumo: !!S.canTsumo && S.turn === m, human: 0, humans: [0]
+      };
+    };
+    NET.broadcast = function () {
+      if (NET.role !== 'host' || !GM.G) return;
+      Object.keys(NET.conns).forEach(function (k) { var c = NET.conns[k]; if (c && c.open && k !== 'host') c.send({ t: 'view', v: NET.viewFor(GM.G, +k) }); });
+    };
+    NET.handleAct = function (m, msg) {
+      var S = GM.G; if (!S) return;
+      if (msg.k === 'discard') MJG.humanDiscard(S, msg.tile, m);
+      else if (msg.k === 'riichi') MJG.humanRiichi(S, msg.tile, m);
+      else if (msg.k === 'call') MJG.humanCall(S, msg.opt, m);
+      else if (msg.k === 'tsumo') MJG.humanTsumo(S, m);
+    };
+    NET.begin = function () {
+      NET.lobby = false;
+      if (NET.timer) { clearInterval(NET.timer); NET.timer = null; }
+      netLobbyHide();
+      t0 = performance.now();   // the clock starts now, so every player's arrow and deal start together
+    };
+    // what the player takes from the table: a move goes to the host when you are joining, otherwise it is played here
+    function actDiscard(t) { if (NET.role === 'client') { NET.toHost({ t: 'act', k: 'discard', tile: t }); return true; } return MJG.humanDiscard(GM.G, t, 0); }
+    function actRiichi(t) { if (NET.role === 'client') { NET.toHost({ t: 'act', k: 'riichi', tile: t }); return true; } return MJG.humanRiichi(GM.G, t, 0); }
+    function actCall(opt) { if (NET.role === 'client') { NET.toHost({ t: 'act', k: 'call', opt: opt }); return true; } return MJG.humanCall(GM.G, opt, 0); }
+    function actTsumo() { if (NET.role === 'client') { NET.toHost({ t: 'act', k: 'tsumo' }); return true; } return MJG.humanTsumo(GM.G, 0); }
+    function netApplyView(v) {
+      GM.G = v;
+      if (!GM.started) { GM.started = true; dealt.forEach(function (d) { if (d.edge === "S" && !d.game) d.discarded = true; }); setBotFaces(); }
+      gameRender();
+    }
+    var NAME_POOL = ['Mika', 'Tobi', 'Ren', 'Sable', 'Juno', 'Pico', 'Idris', 'Wren', 'Kato', 'Luma', 'Nico', 'Rune', 'Hazel', 'Quill'];
+    function randomName() { return NAME_POOL[Math.floor(Math.random() * NAME_POOL.length)]; }
+    NET.myName = randomName();
+    NET.names = {};
+    NET.lastSlots = null;
+    NET.editing = false;
+    NET.mySeat = 0;
+    // the four seats in the lobby: yours, then the three others, live or empty
+    NET.slots = function () {
+      var out = [{ seat: 0, name: NET.myName, live: true }];
+      for (var s = 1; s <= 3; s++) out.push(NET.seats[s] ? { seat: s, name: NET.names[s] || randomName(), live: true } : { seat: s, name: '', live: false });
+      return out;
+    };
+    function netEnsureLobbyEl() {
+      if (!NET.lobbyEl) {
+        NET.lobbyEl = document.createElement("div");
+        NET.lobbyEl.style.cssText = "position:fixed;top:14px;left:50%;transform:translateX(-50%);z-index:6000;font:15px MGPixel, monospace;color:#fff;background:#000;padding:12px 16px;min-width:300px;border:2px solid #2a1808;";
+        document.body.appendChild(NET.lobbyEl);
+      }
+      return NET.lobbyEl;
+    }
+    function netLobbyShow(text) {
+      var el = netEnsureLobbyEl(); el.innerHTML = ""; el.style.display = "block";
+      var t = document.createElement("div"); t.textContent = text; el.appendChild(t);
+    }
+    function netLobbyHide() { if (NET.lobbyEl) NET.lobbyEl.style.display = "none"; }
+    // the black box: the room, the time left, and four slots, green for a live player and red for an empty seat
+    function netLobbyDraw(slots, status) {
+      if (NET.editing) return;
+      var el = netEnsureLobbyEl(); el.innerHTML = ""; el.style.display = "block";
+      var head = document.createElement("div"); head.textContent = "Room " + NET.room + "  ·  " + status; head.style.cssText = "margin-bottom:10px;color:#d9c3a0;"; el.appendChild(head);
+      var seatNames = ["You (South)", "Right (East)", "Center (North)", "Left (West)"];
+      slots.forEach(function (sl) {
+        var row = document.createElement("div"); row.style.cssText = "display:flex;align-items:center;gap:10px;margin:6px 0;";
+        var dot = document.createElement("span"); dot.style.cssText = "display:inline-block;width:16px;height:16px;flex:0 0 16px;background:" + (sl.live ? "#2e9e3e" : "#c62828") + ";";
+        var nm = document.createElement("span"); nm.style.cssText = "min-width:150px;";
+        nm.textContent = sl.live ? sl.name : "empty";
+        if (sl.live && sl.seat === NET.mySeat) { nm.style.cssText += "text-decoration:underline dotted;cursor:text;"; nm.title = "Click to change your name"; nm.addEventListener("click", function () { netEditName(nm, sl.name); }); }
+        var lbl = document.createElement("span"); lbl.textContent = seatNames[sl.seat]; lbl.style.cssText = "font-size:12px;color:#9a8a7a;";
+        row.appendChild(dot); row.appendChild(nm); row.appendChild(lbl); el.appendChild(row);
+      });
+    }
+    function netEditName(nm, current) {
+      NET.editing = true;
+      var inp = document.createElement("input"); inp.type = "text"; inp.maxLength = 16; inp.value = current;
+      inp.style.cssText = "font:15px MGPixel, monospace;width:150px;background:#111;color:#fff;border:1px solid #6b4628;";
+      nm.replaceWith(inp); inp.focus(); inp.select();
+      var done = false;
+      function commit() { if (done) return; done = true; var v = inp.value.trim().slice(0, 16) || current; NET.editing = false; NET.setName(v); }
+      inp.addEventListener("keydown", function (e) { if (e.key === "Enter") commit(); });
+      inp.addEventListener("blur", commit);
+    }
+    NET.setName = function (v) {
+      if (NET.role === 'host') { NET.myName = v; netRefresh(true); return; }
+      NET.toHost({ t: 'name', name: v });
+      if (NET.lastSlots) { NET.lastSlots = NET.lastSlots.map(function (sl) { return sl.seat === NET.mySeat ? Object.assign({}, sl, { name: v }) : sl; }); netLobbyDraw(NET.lastSlots, 'Waiting for the host to start'); }
+    };
+    function netStatus() { return NET.role === 'host' ? "Starts in " + Math.max(0, Math.ceil((NET.deadline - Date.now()) / 1000)) + "s or when full" : "Waiting for the host to start"; }
+    function netRefresh(broadcast) {
+      if (NET.role !== 'host' || !NET.lobby) return;
+      var slots = NET.slots(); NET.lastSlots = slots;
+      if (broadcast) Object.keys(NET.conns).forEach(function (k) { var c = NET.conns[k]; if (c && c.open && k !== 'host') c.send({ t: 'lobby', slots: slots }); });
+      netLobbyDraw(slots, netStatus());
+    }
+    function netLobbyTick() {
+      if (!NET.lobby || NET.role !== 'host') return;
+      netRefresh(false);
+      if (Date.now() >= NET.deadline || NET.seatFree() === 0) netHostBegin();
+    }
+    function netHostBegin() {
+      if (!NET.lobby) return;
+      NET.begin();
+      Object.keys(NET.conns).forEach(function (k) { var c = NET.conns[k]; if (c && c.open && k !== 'host') c.send({ t: 'begin' }); });
+    }
+    function netClientMsg(msg) {
+      if (!msg) return;
+      if (msg.t === 'seat') { NET.mySeat = msg.seat; starter = (msg.starter - msg.seat + 4) % 4; }
+      else if (msg.t === 'lobby') { NET.lastSlots = msg.slots; netLobbyDraw(msg.slots, 'Waiting for the host to start'); }
+      else if (msg.t === 'begin') NET.begin();
+      else if (msg.t === 'view') netApplyView(msg.v);
+      else if (msg.t === 'full') netLobbyShow("Room " + NET.room + " is full.");
+    }
+    function netAccept(conn) {
+      var s = NET.seatFree();
+      if (!s) { conn.on('open', function () { conn.send({ t: 'full' }); }); setTimeout(function () { conn.close(); }, 800); return; }
+      NET.seats[s] = conn.peer; NET.conns[s] = conn; NET.names[s] = randomName();
+      conn.on('open', function () {
+        conn.send({ t: 'seat', seat: s, starter: starter });
+        if (!NET.lobby) conn.send({ t: 'begin' });
+        if (GM.G) NET.broadcast();
+        netRefresh(true);
+      });
+      conn.on('data', function (msg) {
+        if (!msg) return;
+        if (msg.t === 'act' && GM.G) { NET.handleAct(s, msg); gameAfter(); }
+        else if (msg.t === 'name' && typeof msg.name === 'string') { NET.names[s] = msg.name.trim().slice(0, 16) || NET.names[s]; netRefresh(true); }
+      });
+      conn.on('close', function () { delete NET.seats[s]; delete NET.conns[s]; netRefresh(true); });
+      netRefresh(true);
+      if (NET.lobby && NET.seatFree() === 0) netHostBegin();
+    }
+    function netJoin(room) {
+      NET.role = 'client'; NET.room = room; NET.lobby = true;
+      netLobbyShow("Joining room " + room + "...");
+      var p = new Peer();
+      NET.peer = p;
+      p.on('open', function () {
+        var c = p.connect('tf-' + room, { reliable: true });
+        NET.conns.host = c;
+        c.on('open', function () { netLobbyShow("Joined room " + room + ". Waiting for the host to start."); });
+        c.on('data', netClientMsg);
+        c.on('close', function () { netLobbyShow("Disconnected from room " + room + "."); });
+      });
+      p.on('error', function (err) { netLobbyShow("Could not reach room " + room + " (" + (err && err.type) + ")."); });
+    }
+    function netStart(room) {
+      NET.room = room; NET.lobby = true; NET.deadline = Date.now() + 90000; NET.mySeat = 0;
+      netLobbyShow("Opening room " + room + "...");
+      var p;
+      try { p = new Peer('tf-' + room); } catch (err) { netLobbyShow("Peer-to-peer is not available here."); NET.lobby = false; return; }
+      p.on('open', function () { NET.role = 'host'; NET.peer = p; NET.timer = setInterval(netLobbyTick, 500); netRefresh(false); });
+      p.on('connection', netAccept);
+      p.on('error', function (err) {
+        if (err && err.type === 'unavailable-id') { p.destroy(); netJoin(room); }   // someone is already hosting this room: join them
+        else netLobbyShow("Room " + room + ": connection problem (" + (err && err.type) + ").");
+      });
+    }
+
     function gameStart(starter) {
+      if (NET.role === 'client') return;   // a joining player is shown the host's game
       GM.started = true;
       dealt.forEach(function (d) { if (d.edge === "S" && !d.game) d.discarded = true; });   // the dealt hand gives way to the engine's hand
-      GM.G = MJG.newGame({ human: 0, dealer: starter });
+      GM.G = MJG.newGame({ humans: NET.humanSeats(), dealer: starter });
       setBotFaces();
       gameRender();
+      NET.broadcast();
     }
     function gameAfter() {
       var S = GM.G;
       // no auto-pass: the game waits for you to act (for now, a click on the prompt passes)
       if (S.over && S.result && S.result.winner === 0) unlockAchievement("mahjong-win");
       gameRender();
+      NET.broadcast();
     }
     function gameDiscard(d) {
       var S = GM.G;
       if (!S || !d || !d.game || S.over || S.phase !== "discard" || S.turn !== 0) return false;
-      MJG.humanDiscard(S, d.tile);
+      if (GM.riichiMode) {   // riichi: the chosen tile is the discard that declares it, and only if you are waiting after it
+        GM.riichiMode = false;
+        if (actRiichi(d.tile)) { GM.playedFirst = true; gameAfter(); }
+        else gameRender();
+        return true;
+      }
+      actDiscard(d.tile);
       GM.playedFirst = true;
       gameAfter();
       return true;
@@ -2814,9 +3053,9 @@ Rack: middle</pre>` },
       hoverD = dragD;   // keeps the lifted look while dragging
       if (!ray.ray.intersectPlane(dragPlane, dragHit)) return true;
       var others = handOrder(dragD);
-      var idx = Math.max(0, Math.min(others.length, Math.round((dragHit.x + 2.93) / 0.45)));
+      var idx = Math.max(0, Math.min(others.length, Math.round(dragHit.x / 0.324 + others.length / 2)));
       var seq = others.slice(); seq.splice(idx, 0, dragD);
-      seq.forEach(function (d, i) { d.to.x = -2.93 + 0.45 * i; });   // the other tiles shift to make room
+      seq.forEach(function (d, i) { d.to.x = handX(i, seq.length); });   // the other tiles shift to make room
       return true;
     }
     function dragEnd() { dragD = null; dragCand = null; hoverD = null; gameSyncOrder(); }
@@ -2854,7 +3093,7 @@ Rack: middle</pre>` },
     });
     // once the arrow picks East, the other winds follow in turn order and the wall's start is marked
     var WINDS = ['East', 'South', 'West', 'North'];
-    var wallStarts = [[3.6, 4.15], [4.15, -3.6], [-3.6, -4.15], [-4.15, 3.6]];
+    var wallStarts = [[3.4, 3.95], [3.95, -3.4], [-3.4, -3.95], [-3.95, 3.4]];
     function setupWinds() {
       // the four wind faces glow softly over their tile faces, so each player's wind reads at a glance
       for (var wt = 27; wt <= 30; wt++) { typeMats[wt].emissive.setHex(0xffe9a0); typeMats[wt].emissiveIntensity = 0.35; }
@@ -2893,18 +3132,19 @@ Rack: middle</pre>` },
     var censorBoxes = [];   // black boxes with each opponent's wind, over their faces
     function ease(x) { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); }
     function frame() {
-      var T = (performance.now() - t0) / 1000;
+      var T = NET.lobby ? 0 : (performance.now() - t0) / 1000;   // the clock waits while a room is gathering
       if (!arrowDone) {
         var at = Math.min(1, T / 4), eo = 1 - Math.pow(1 - at, 3);
         var dd = startSeats[starter], thetaT = Math.atan2(-dd[1], dd[0]);
         arrowGroup.rotation.y = (thetaT + 12 * Math.PI) * eo;
-        if (at >= 1) { arrowDone = true; startLbl.textContent = startNames[starter] + (starter === 0 ? ' are' : ' is') + ' East'; startLbl.style.opacity = '1'; setTimeout(function () { startLbl.style.opacity = '0'; }, 2500); setupWinds(); remapDeal(starter); }
+        if (at >= 1) { arrowDone = true; startLbl.textContent = startNames[starter] + (starter === 0 ? ' are' : ' is') + ' East'; startLbl.style.opacity = '1'; setTimeout(function () { startLbl.style.opacity = '0'; }, 2500); setupWinds(); remapDeal(starter); assignDealOrder(starter); }
       }
-      if (arrowDone && T > 4.5) { if (!westSet) { westSet = true; }   // the walls stay at their initial positions; tiles only move when drawn tableGroup.visible = true; }
+      if (arrowDone && T > 4.5) { if (!westSet && T > 8) { westSet = true; setupWestWall(); } // after the four players' initial tiles are drawn
+      tableGroup.visible = true; }
       if (!GM.started && arrowDone && T > 9) gameStart(starter);
       // dealing: each hand tile leaves its wall and slides into its place, one after another after the lamp
       dealt.forEach(function (d) {
-        var st = 5.0 + d.k * 0.035, p = ease((T - st) / 0.55);
+        var st = 5.0 + (d.order !== undefined ? d.order : d.k) * 0.035, p = ease((T - st) / 0.55);
         // the 14th tile is only dealt to the seat that is East (the arrow's pick); other seats keep 13
         var active = !d.extra || d.edge === ['S', 'E', 'N', 'W'][starter];
         d.m.visible = T >= st && active && !d.discarded;
@@ -2921,6 +3161,13 @@ Rack: middle</pre>` },
         d.m.position.y += 0.12 * d.hov;                       // the hovered tile lifts a little
         d.m.scale.copy(d.base).multiplyScalar(1 + 0.12 * d.hov);   // and grows slightly
       });
+      if (hoverD && hoverD.game && hoverD.edge === 'S') {
+        var lp = hoverD.m.position.clone(); lp.y += 0.3; lp.project(cam2);
+        tileLabel.textContent = tileName(hoverD.tile);
+        tileLabel.style.left = ((lp.x + 1) / 2 * ov.clientWidth) + 'px';
+        tileLabel.style.top = ((1 - lp.y) / 2 * ov.clientHeight) + 'px';
+        tileLabel.style.display = 'block';
+      } else tileLabel.style.display = 'none';
       var swing = ease(T / 4);                                  // rotate into three-point perspective over 4 seconds
       cam2.position.lerpVectors(camStart, camEnd, swing);
       // pointer near the bottom of the page zooms in on your tiles
@@ -2928,7 +3175,7 @@ Rack: middle</pre>` },
       cam2.position.lerp(new THREE.Vector3(0, 3.4, 7.4), zoomLerp * 0.85);
       // pointer up near the top: the camera rises toward a top-down view over the discards
       topLerp += ((pointerHigh ? 1 : 0) - topLerp) * 0.06;
-      cam2.position.lerp(new THREE.Vector3(0, 9.5, 2.5), topLerp * 0.7);
+      cam2.position.lerp(new THREE.Vector3(0, 6.2, 4.2), topLerp * 0.7);   // lower and nearer the table than before: a lean over the discards, not a climb
       // whose turn it is: the camera turns a little toward the left or right player; the opposite player keeps the view centred
       // your turn: look at your own pieces; another player's turn: pan up and look straight at that person
       var seat = GM.G ? ["player", "right", "middle", "left"][GM.G.turn] : "player";   // the camera follows whose turn it is, not a timer
@@ -2936,7 +3183,8 @@ Rack: middle</pre>` },
       // pointer at the left or right edge: the camera focuses on that player
       if (pointerLeft) tgt = [-6.4, 1.6, 0.6]; else if (pointerRight) tgt = [6.4, 1.6, 0.6];
       lookV.x += (tgt[0] - lookV.x) * 0.05; lookV.y += (tgt[1] - lookV.y) * 0.05; lookV.z += (tgt[2] - lookV.z) * 0.05;
-      cam2.lookAt(lookV);
+      if (NET.lobby) { var orb = performance.now() / 1000 * 0.12; cam2.position.set(Math.cos(orb) * 9, 1.6, Math.sin(orb) * 9); cam2.lookAt(0, 1.0, 0); }   // while a room gathers, the camera circles the table at head height
+      else cam2.lookAt(lookV);
       var fade = ease((T - 1) / 2.5);                           // colour change: lattice to green tiles
       seatMats.forEach(function (m) { m.opacity = 0.2 * ease((T - 5.5) / 1.5); }); floorMat.roughness = 0.05 + 0.5 * ease((T - 1.5) / 3);   // roughness fades in with the colour change
       spot.position.set(0, 9, 0.5);
@@ -2950,6 +3198,8 @@ Rack: middle</pre>` },
       rend.render(sc2, cam2);
       raf = requestAnimationFrame(frame);
     }
+    if (window.mahjongRoom > 10) netStart(window.mahjongRoom);
+    window.mahjongRoom = 0;
     frame();
     function close() { cancelAnimationFrame(raf); window.removeEventListener("mousemove", onMove); rend.dispose(); ov.remove(); window.__mjTable = null; window.removeEventListener("keydown", onKey); deskEls.forEach(function (el) { el.style.opacity = ""; el.style.transition = ""; }); document.body.style.backgroundColor = oldBg; }
     function onKey(e) { if (e.key === "Escape") close(); }
@@ -2969,8 +3219,8 @@ Rack: middle</pre>` },
     d.addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; if (b.getAttribute("data-a") === "ok") askWager(); else closeDlg(); });
   }
   function askWager() {
-    var d = note("Wager", "How many fingers would you be willing to wager?<br><input type=\"number\" min=\"1\" max=\"10\" value=\"1\" style=\"width:80px;margin-top:8px;font:14px MGPixel, monospace;\">", '<button type="button" class="note-ok" data-a="ok">OK</button><button type="button" class="note-ok" data-a="cancel">Cancel</button>');
-    d.addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; if (b.getAttribute("data-a") === "ok") { var n = parseInt(d.querySelector("input").value, 10); closeDlg(); window.mahjongWager = isNaN(n) ? 1 : Math.max(1, Math.min(10, n)); openMahjongTable(); } else closeDlg(); });
+    var d = note("Wager", "Enter a number. 10 or less plays against bots. Over 10 opens a room others can join with that number, for 90 seconds or until it is full.<br><input type=\"number\" min=\"1\" style=\"width:100px;margin-top:8px;font:14px MGPixel, monospace;\">", '<button type="button" class="note-ok" data-a="ok">OK</button><button type="button" class="note-ok" data-a="cancel">Cancel</button>');
+    d.addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; if (b.getAttribute("data-a") === "ok") { var n = parseInt(d.querySelector("input").value, 10); closeDlg(); window.mahjongRoom = isNaN(n) ? 0 : n; openMahjongTable(); } else closeDlg(); });
   }
   window.addEventListener("keydown", function (e) {
     if (e.ctrlKey || e.metaKey || e.altKey || !e.key || e.key.length !== 1) return;
@@ -3098,6 +3348,7 @@ Rack: middle</pre>` },
 (function (root) {
   var MJ = root.MJ;
 
+  function isH(S, seat) { return S.humans.indexOf(seat) >= 0; }
   function newGame(opts) {
     opts = opts || {};
     var rand = opts.rand || Math.random;
@@ -3105,9 +3356,10 @@ Rack: middle</pre>` },
     var dealer = opts.dealer !== undefined ? opts.dealer : Math.floor(rand() * 4);
     var roundWind = Math.floor(rand() * 4);
     var S = {
-      wall: MJ.newWall(rand).reverse(),   // pop() now takes the wall in order: each stack's top, then its bottom, along the wall hands: [[], [], [], []], melds: [[], [], [], []], discards: [[], [], [], []],
+      wall: MJ.newWall(rand).reverse(),   // pop() takes the wall in order: each stack's top, then its bottom
+      hands: [[], [], [], []], melds: [[], [], [], []], discards: [[], [], [], []], riichi: [false, false, false, false],
       dealer: dealer, roundWind: roundWind, seatWind: [0, 1, 2, 3].map(function (s) { return 27 + (s - dealer + 4) % 4; }),
-      turn: dealer, phase: 'discard', queue: [], over: false, result: null, human: opts.human === undefined ? 0 : opts.human,
+      turn: dealer, phase: 'discard', queue: [], over: false, result: null, humans: opts.humans || [opts.human === undefined ? 0 : opts.human], human: (opts.humans || [opts.human === undefined ? 0 : opts.human])[0],
       last: null, canTsumo: false, rand: rand
     };
     // deal 13 each, then the dealer draws the 14th
@@ -3132,7 +3384,7 @@ Rack: middle</pre>` },
     if (draw(S, S.turn) === null) return;
     var seat = S.turn;
     if (MJ.canWin(S.hands[seat], S.melds[seat].length)) {
-      if (seat === S.human) S.canTsumo = true;
+      if (isH(S, seat)) S.canTsumo = true;
       else win(S, seat, 'tsumo', null);
     }
   }
@@ -3159,6 +3411,7 @@ Rack: middle</pre>` },
     for (var i = 1; i <= 3; i++) {
       var p = (from + i) % 4;
       var opts = MJ.callOptions(S.hands[p], S.melds[p], t, p, from);
+      if (S.riichi[p]) opts = opts.filter(function (o) { return o.type === 'ron'; });   // a riichi hand can only be taken by ron
       if (opts.length) q.push({ player: p, opts: opts });
     }
     q.sort(function (a, b) {
@@ -3173,7 +3426,7 @@ Rack: middle</pre>` },
   function processQueue(S) {
     while (S.queue.length) {
       var entry = S.queue[0];
-      if (entry.player === S.human) { S.phase = 'call'; return; }
+      if (isH(S, entry.player)) { S.phase = 'call'; return; }
       var pick = aiPick(S, entry);
       S.queue.shift();
       if (pick) { apply(S, entry.player, pick); return; }
@@ -3221,40 +3474,68 @@ Rack: middle</pre>` },
   }
 
   // Human input: discard a tile, call (ron/pon/kan/chi) or pass, or tsumo.
-  function humanDiscard(S, t) {
-    if (S.over || S.phase !== 'discard' || S.turn !== S.human) return false;
-    discard(S, S.human, t);
+  function humanDiscard(S, t, seat) {
+    if (seat === undefined) seat = S.humans[0];
+    if (S.over || S.phase !== 'discard' || S.turn !== seat) return false;
+    if (S.riichi[seat] && t !== S.hands[seat][S.hands[seat].length - 1]) return false;   // in riichi you must discard the tile you drew
+    discard(S, seat, t);
     return true;
   }
-  function humanCall(S, opt) {
-    if (S.phase !== 'call' || !S.queue.length || S.queue[0].player !== S.human) return false;
+  // Riichi: a closed hand that is waiting (one tile from winning) after the discard.
+  function waits(hand, melds) {
+    var out = [];
+    for (var t = 0; t < 34; t++) if (MJ.canWin(hand.concat([t]), melds.length)) out.push(t);
+    return out;
+  }
+  function canRiichi(S, seat, t) {
+    if (S.riichi[seat] || S.melds[seat].length) return false;
+    var h = S.hands[seat].slice();
+    MJ.removeOne(h, t);
+    return waits(h, S.melds[seat]).length > 0;
+  }
+  function humanRiichi(S, t, seat) {
+    if (seat === undefined) seat = S.humans[0];
+    if (S.over || S.phase !== 'discard' || S.turn !== seat) return false;
+    if (!canRiichi(S, seat, t)) return false;
+    S.riichi[seat] = true;
+    discard(S, seat, t);
+    return true;
+  }
+  function humanCall(S, opt, seat) {
+    if (seat === undefined) seat = S.humans[0];
+    if (S.phase !== 'call' || !S.queue.length || S.queue[0].player !== seat) return false;
     var entry = S.queue.shift();
     if (opt) {
       var found = entry.opts.filter(function (o) { return o.type === opt.type && (!opt.seq || opt.seq.join() === o.seq.join()); })[0];
       if (!found) { S.queue.unshift(entry); return false; }
-      apply(S, S.human, found);
-    } else {
-      processQueue(S);
-    }
+      apply(S, seat, found);
+    } else processQueue(S);
     return true;
   }
-  function humanTsumo(S) {
-    if (!S.canTsumo || S.over) return false;
-    win(S, S.human, 'tsumo', null);
+  function humanTsumo(S, seat) {
+    if (seat === undefined) seat = S.humans[0];
+    if (!S.canTsumo || S.over || S.turn !== seat) return false;
+    win(S, seat, 'tsumo', null);
     return true;
   }
 
   // Let AI seats play until a human must act or the hand ends.
+  // Let AI seats play until a human must act or the hand ends.
   function advance(S) {
     var guard = 0;
-    while (!S.over && S.phase === 'discard' && S.turn !== S.human && guard++ < 1000) {
-      var seat = S.turn;
-      discard(S, seat, MJ.aiDiscard(S.hands[seat]));
+    while (!S.over && S.phase === 'discard' && !isH(S, S.turn) && guard++ < 1000) {
+      var seat = S.turn, tile;
+      if (S.riichi[seat]) tile = S.hands[seat][S.hands[seat].length - 1];   // in riichi the tile just drawn is the one discarded
+      else {
+        tile = MJ.aiDiscard(S.hands[seat]);
+        if (canRiichi(S, seat, tile)) S.riichi[seat] = true;   // the AI declares riichi as soon as its discard leaves it waiting
+      }
+      discard(S, seat, tile);
       if (S.phase === 'call') return;
     }
   }
 
-  root.MJG = { newGame: newGame, humanDiscard: humanDiscard, humanCall: humanCall, humanTsumo: humanTsumo, advance: advance };
+  root.MJG = { newGame: newGame, humanDiscard: humanDiscard, humanRiichi: humanRiichi, canRiichi: canRiichi, humanCall: humanCall, humanTsumo: humanTsumo, advance: advance };
 })(typeof window !== 'undefined' ? window : globalThis);
 
 </script>
