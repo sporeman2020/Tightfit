@@ -2542,10 +2542,10 @@ Rack: middle</pre>` },
     // the tile maps: normal and roughness from the malachite picture; each type gets its own face
     var tileNormal = new THREE.TextureLoader().load('assets/normal_800.jpg');
     var tileRough = new THREE.TextureLoader().load('assets/roughness_800.jpg');
-    var tileSheet = new THREE.TextureLoader().load('assets/tile_types_cards.png');   // 7 by 5 grid of the 34 type labels
+    var tileSheet = new THREE.TextureLoader().load('assets/tile_types_white.png');   // 7 by 5 grid of the 34 type labels
     var typeMats = TYPE_LABELS.map(function (lab) {
       // the sheet holds only the type text (transparent around it), so the white face shows through
-      return new THREE.MeshStandardMaterial({ map: tileSheet, color: 0xf4ecd8, transparent: true, alphaTest: 0.5, roughness: 0.6, metalness: 0 });
+      return new THREE.MeshStandardMaterial({ map: tileSheet, roughness: 0.6, metalness: 0 });
     });
     // maps the front face so the whole face shows the type (uv 0..1 across the tile)
     // maps the white face onto this type's cell in the sheet (mirrored, so it reads from the table side)
