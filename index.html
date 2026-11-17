@@ -2235,16 +2235,16 @@ Rack: middle</pre>` },
     var side = (keysDown.ArrowRight || keysDown.d) ? 1 : ((keysDown.ArrowLeft || keysDown.a) ? -1 : 0);
     var holdingS = back === 1;
     pst.hold = holdingS ? pst.hold + dt : 0;
-    var dx = side * 3.2 * dt, dz = 0;                        // S holds you still; W is disabled for now
+    var dx = side * 3.2 * dt, dz = 0, dyv = 0;                        // S holds you still; W is disabled for now
     var hw = pst.hedWorld, dist = Math.hypot(hw.x - pst.x, hw.z - pst.z, hw.y - pst.y), prox = Math.max(0, Math.min(1, 1 - dist / 440));
     if (!holdingS) {
       // walk straight forward into the hedron's halo
-      var px = hw.x - pst.x, pz = (hw.z + 25) - pst.z, pl = Math.hypot(px, pz) || 1;   // stop 25 units in front of the hedron, short of its surface   // toward the bright ring at the hedron centre
+      var px = hw.x - pst.x, py = hw.y - pst.y, pz = (hw.z + 25) - pst.z, pl = Math.hypot(px, py, pz) || 1;   // in three dimensions: the figure climbs as it goes   // stop 25 units in front of the hedron, short of its surface   // toward the bright ring at the hedron centre
       pst.walkT = (pst.walkT || 0) + dt;   // time spent walking, so the speed grows exponentially
       var sp = 4.0 * Math.exp(0.04 * pst.walkT);
-      var step = Math.min(sp * dt, pl); dx += px / pl * step; dz += pz / pl * step;   // never overshoot the stopping point
+      var step = Math.min(sp * dt, pl); dx += px / pl * step; dz += pz / pl * step; dyv += py / pl * step;   // never overshoot the stopping point
     }    pst.vy = 0;    if (pst.y <= 0) { pst.y = 0; if (pst.vy < 0) pst.vy = 0; }
-    pst.x += dx; pst.z += dz;
+    pst.x += dx; pst.z += dz; pst.y += dyv;
     person.position.set(pst.x, pst.y, pst.z);
     cam.position.set(pst.x, pst.y + 2.6, pst.z + 4.2);
     // the look target moves from the figure toward the hedron as the figure rises
