@@ -2283,7 +2283,7 @@ Rack: middle</pre>` },
       lyric.style.top = (vy + 13).toFixed(1) + "%";                                                  // just under the horizon line
       lyric.style.color = off > 0.5 ? "#b52a34" : "";                                                       // a little brighter once the sky is gone, so the maroon can still be read
       for (var li = 0; li < lyric.children.length; li++) {                                         // each line fades in, holds, fades away, and the next takes its place
-        var tt = T - lyStart[li], lop = 0; if (tt >= 0 && tt < lyDur[li]) lop = sm(tt / 1.3) * (1 - sm((tt - (lyDur[li] - 1.3)) / 1.3));   // each line plays once
+        var tt = T - lyStart[li], lop = 0; if (tt >= 0 && tt < lyDur[li]) { var last = li === lyric.children.length - 1, fo = last ? 2.5 : 1.3; lop = sm(tt / 1.3) * (1 - sm((tt - (lyDur[li] - fo)) / fo)); }   // each line plays once; EVERYTHING holds, then fades out slowly
         lyric.children[li].style.opacity = lop.toFixed(3);
       }
       renderer.autoClear = false; renderer.clear(); renderer.render(sc, cam); renderer.clearDepth(); renderer.render(sc2, cam);      // sky, floor and towers, then the hedron over the same depth
