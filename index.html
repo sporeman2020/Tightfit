@@ -2713,21 +2713,91 @@ Rack: middle</pre>` },
     var winPanel = document.createElement("div");
     winPanel.style.cssText = "position:absolute;right:16px;bottom:16px;display:none;flex-direction:column;gap:10px;font:16px MGPixel, monospace;background:#4a2e1a;border:3px solid #2a1808;box-shadow:inset 0 0 0 2px #6b4628;padding:14px;";
     ov.appendChild(winPanel);
+    function renderIdleActions() {                     // the table opens with every action already on it, all dimmed until there is something to do
+      callPanel.innerHTML = ""; winPanel.innerHTML = "";
+      [["Chi", "#2e9db5"], ["Pon", "#f2d200"], ["Kan", "#3aa846"], ["Riichi", "#c8452f"]].forEach(function (a) { callPanel.appendChild(panelButton(a[0], a[1], null, false)); });
+      [["Ron", "#c8452f"], ["Tsumo", "#f2d200"]].forEach(function (a) { winPanel.appendChild(panelButton(a[0], a[1], null, false)); });
+      callPanel.style.display = "grid"; winPanel.style.display = "flex";
+    }
+    renderIdleActions();
     // your hand, as a row of tiles in the UI at the bottom (spaced a touch apart); clicking one discards it
     var handBar = document.createElement("div");
-    handBar.style.cssText = "position:absolute;left:50%;transform:translateX(-50%);bottom:56px;display:none;gap:5px;max-width:calc(100% - 340px);overflow-x:auto;padding:6px;background:rgba(40,22,10,.55);";
+    handBar.style.cssText = "position:absolute;left:50%;transform:translateX(-50%);bottom:56px;display:none;gap:5px;max-width:calc(100% - 340px);overflow-x:auto;padding:32px 8px 6px;background:rgba(40,22,10,.55);";
     ov.appendChild(handBar);
-    function renderHandBar(S) {
-      handBar.innerHTML = "";
-      if (!S || !S.hands || !S.hands[0]) { handBar.style.display = "none"; return; }
-      handBar.style.display = "flex";
-      S.hands[0].forEach(function (t) {
-        var c = document.createElement("button");
-        c.type = "button"; c.textContent = tileName(t);
-        c.style.cssText = "flex:0 0 auto;width:66px;height:86px;padding:4px;background:#f1e7d0;color:#2a0808;border:2px solid #8a6a3a;border-radius:5px;font:12px MGPixel, monospace;line-height:1.2;cursor:pointer;box-shadow:inset -3px -3px 0 rgba(0,0,0,.2);";
-        c.addEventListener("click", function () { gameDiscard({ game: true, tile: t }); });
-        handBar.appendChild(c);
+    // ---- your hand: real 3D tiles drawn in a second pass above the table, higher up the screen, seen from above and from the side
+    // (a camera that is turned and tipped, so the verticals converge too: a three-point perspective that shows each tile's top and its side).
+    var handScene = new THREE.Scene();
+    handScene.add(new THREE.AmbientLight(0xffffff, 0.75));
+    var handKey = new THREE.DirectionalLight(0xfff1dc, 1.25); handKey.position.set(-3, 6, 7); handScene.add(handKey);
+    var handFill = new THREE.DirectionalLight(0xbfd8ff, 0.45); handFill.position.set(5, 2, 3); handScene.add(handFill);
+    var handCam = new THREE.PerspectiveCamera(26, 4, 0.1, 60);
+    var handTiles = [], handHover = -1, handLast = performance.now(), handRay = new THREE.Raycaster(), handNdc = new THREE.Vector2();
+    var HAND_STEP = 0.345;                                // distance between tile centres (a tile is 0.324 wide)
+    function handRect() {                                // the strip of the screen the hand is drawn in (CSS pixels, measured from the top-left)
+      var W = rend.domElement.clientWidth, H = rend.domElement.clientHeight;
+      var hh = Math.round(Math.min(270, H * 0.32)), vw = Math.round(Math.min(W * 0.74, 1380)), bottom = Math.round(Math.max(72, H * 0.13));
+      return { x: Math.round((W - vw) / 2), w: vw, h: hh, bottom: bottom, top: H - bottom - hh, W: W, H: H };
+    }
+    function handClear() {
+      handTiles.forEach(function (t) { handScene.remove(t.g); t.g.traverse(function (o) { if (o.geometry) o.geometry.dispose(); }); });
+      handTiles = [];
+    }
+    function renderHandBar(S) {                          // (the name stays; the hand is no longer a row of buttons)
+      handBar.style.display = "none";
+      if (!S || !S.hands || !S.hands[0]) { handClear(); return; }
+      var hand = S.hands[0], n = hand.length, prev = GM.lastHandLen;
+      var flipIdx = (prev !== undefined && n > prev && (n - 2) % 3 === 0) ? n - 1 : -1;   // a draw (the hand grew to 14, 11, 8, 5 or 2): the new tile is the last one, and it flips into place
+      GM.lastHandLen = n;
+      handClear();
+      hand.forEach(function (t, i) {
+        var g = gameTile(t);                             // the same tile the table uses: malachite back, white face with its type
+        g.rotation.order = "YXZ"; g.rotation.set(0, Math.PI, 0);   // standing up, face toward you
+        g.userData.handIdx = i;
+        var o = { g: g, tile: t, i: i, x: 0, y: 0, s: 1, flip: i === flipIdx ? 0 : 1, base: g.scale.clone() };
+        o.x = (i - (n - 1) / 2) * HAND_STEP;
+        g.position.set(o.x, 0, 0);
+        handScene.add(g); handTiles.push(o);
       });
+      handHover = -1;
+    }
+    function handPick(e) {                               // which tile is under the pointer, or -1
+      if (!handTiles.length) return -1;
+      var r = rend.domElement.getBoundingClientRect(), hr = handRect(), px = e.clientX - r.left, py = e.clientY - r.top;
+      if (px < hr.x || px > hr.x + hr.w || py < hr.top || py > hr.top + hr.h) return -1;
+      handNdc.set(((px - hr.x) / hr.w) * 2 - 1, -(((py - hr.top) / hr.h) * 2 - 1));
+      handRay.setFromCamera(handNdc, handCam);
+      var hits = handRay.intersectObjects(handTiles.map(function (t) { return t.g; }), true);
+      if (!hits.length) return -1;
+      var o = hits[0].object; while (o && o.userData.handIdx === undefined) o = o.parent;
+      return o ? o.userData.handIdx : -1;
+    }
+    rend.domElement.addEventListener("pointermove", function (e) { if (e.pointerType === "mouse") { handHover = handPick(e); rend.domElement.style.cursor = handHover >= 0 ? "pointer" : ""; } });
+    rend.domElement.addEventListener("pointerleave", function () { handHover = -1; rend.domElement.style.cursor = ""; });
+    rend.domElement.addEventListener("click", function (e) {
+      var i = handPick(e); if (i < 0 || !GM.G || !GM.G.hands[0]) return;
+      gameDiscard({ game: true, tile: GM.G.hands[0][i] });
+    });
+    function drawHand() {                                // the second pass: your hand on top of the table, in its own strip and camera
+      var now = performance.now(), dt = Math.min(0.05, (now - handLast) / 1000); handLast = now;
+      if (!handTiles.length) return;
+      var hr = handRect(), n = handTiles.length, rowW = (n - 1) * HAND_STEP + 0.324;
+      handCam.aspect = hr.w / hr.h; handCam.updateProjectionMatrix();
+      var dist = Math.max(2.6, rowW * 0.64);             // far enough to hold the whole row, as large as it will go
+      handCam.position.set(dist * 0.2, dist * 0.36, dist * 0.92); handCam.lookAt(0, 0.04, 0);   // a little right of, above and in front of the row: the top and the right side of each tile show, and every vertical leans (three-point)
+      handTiles.forEach(function (o, i) {
+        var d = i - handHover, up = i === handHover, shift = handHover < 0 || up ? 0 : (d < 0 ? -1 : 1) * (Math.abs(d) === 1 ? 0.07 : Math.abs(d) === 2 ? 0.028 : 0);
+        var tx = (i - (n - 1) / 2) * HAND_STEP + shift, ty = up ? 0.07 : 0, ts = up ? 1.2 : 1, k = Math.min(1, dt * 16);
+        o.x += (tx - o.x) * k; o.y += (ty - o.y) * k; o.s += (ts - o.s) * k;
+        o.flip = Math.min(1, o.flip + dt / 0.55);        // a drawn tile turns over into place
+        var e = 1 - Math.pow(1 - o.flip, 3);
+        o.g.position.set(o.x, o.y + 0.7 * (1 - e), 0.2 * (1 - e));
+        o.g.rotation.x = -1.75 * (1 - e);
+        o.g.scale.set(o.base.x * o.s, o.base.y * o.s, o.base.z * o.s);
+      });
+      rend.autoClear = false; rend.clearDepth(); rend.setScissorTest(true);
+      rend.setViewport(hr.x, hr.bottom, hr.w, hr.h); rend.setScissor(hr.x, hr.bottom, hr.w, hr.h);
+      rend.render(handScene, handCam);
+      rend.setScissorTest(false); rend.setViewport(0, 0, hr.W, hr.H); rend.autoClear = true;
     }
     function gameTile(t) {
       var g = makePiece();
@@ -2755,7 +2825,7 @@ Rack: middle</pre>` },
         pile.forEach(function (t, k) {
           var m = gameTile(t), g = DISC[seat], dc = k % 6, dr = Math.floor(k / 6);
           var lx = (dc - 2.5) * 0.324, lz = (dr - 2) * 0.428, yaw = g[2];   // five rows of six, centred   // the tile's real footprint, so the discards touch with no spacers
-          m.rotation.order = "YXZ"; m.rotation.set(Math.PI / 2, yaw, 0);   // flipped so the type face points up
+          m.rotation.order = "YXZ"; m.rotation.set(Math.PI / 2, yaw + Math.PI, 0);   // face up, and turned so the top of each tile points away from the player who threw it: it reads the right way up to them
           m.position.set(g[0] + lx * Math.cos(yaw) + lz * Math.sin(yaw), 0.12, g[1] - lx * Math.sin(yaw) + lz * Math.cos(yaw));
           tableGroup.add(m); GM.discardMeshes.push(m);
         });
@@ -2765,15 +2835,21 @@ Rack: middle</pre>` },
       var canRon = callWait && S.queue[0].opts.some(function (o) { return o.type === "ron"; });
       var canTsumo = !S.over && S.canTsumo && S.turn === 0;
       var canRiichi = !S.over && S.phase === "discard" && S.turn === 0 && !S.riichi[0] && S.hands[0].some(function (t) { return MJG.canRiichi(S, 0, t); });
+      // every action is always on the table and none is forced: a button only works when that move is possible, and a call you leave alone passes by itself
+      var callOpts = callWait ? S.queue[0].opts : [];
+      var has = function (type) { return callOpts.filter(function (o) { return o.type === type; }); };
+      var chis = has("chi");
       callPanel.innerHTML = ""; winPanel.innerHTML = "";
-      callPanel.style.display = (callWait || canRiichi) ? "grid" : "none";
-      if (callWait) gameCallButtons(S);
-      if (canRiichi) callPanel.appendChild(panelButton("Riichi", "#c8452f", function () { GM.riichiMode = true; gameRender(); }));
-      if (canRon) winPanel.appendChild(panelButton("Ron", "#c8452f", function () { actCall(S.queue[0].opts.filter(function (o) { return o.type === "ron"; })[0]); gameAfter(); }));
-      if (canTsumo) winPanel.appendChild(panelButton("Tsumo", "#f2d200", function () { actTsumo(); gameAfter(); }));
-      winPanel.style.display = (canRon || canTsumo) ? "flex" : "none";
-      callPanel.style.display = callPanel.children.length ? "grid" : "none";   // the left panel only shows when it has a button
-      gameHud.textContent = S.over ? gameResultText(S, names) : (S.phase === "discard" && S.turn === 0 ? "Your turn: click a tile to discard" : (callWait ? "Call available" : "Waiting for " + names[S.turn]));
+      if (chis.length > 1) chis.forEach(function (o) { callPanel.appendChild(panelButton("Chi " + o.seq.map(function (t) { return MJ.LABEL[t]; }).join(" "), "#2e9db5", function () { actCall(o); gameAfter(); }, true)); });
+      else callPanel.appendChild(panelButton("Chi", "#2e9db5", function () { actCall(chis[0]); gameAfter(); }, chis.length === 1));
+      callPanel.appendChild(panelButton("Pon", "#f2d200", function () { actCall(has("pon")[0]); gameAfter(); }, has("pon").length > 0));
+      callPanel.appendChild(panelButton("Kan", "#3aa846", function () { actCall(has("kan")[0]); gameAfter(); }, has("kan").length > 0));
+      callPanel.appendChild(panelButton("Riichi", "#c8452f", function () { GM.riichiMode = true; gameRender(); }, canRiichi));
+      winPanel.appendChild(panelButton("Ron", "#c8452f", function () { actCall(has("ron")[0]); gameAfter(); }, canRon));
+      winPanel.appendChild(panelButton("Tsumo", "#f2d200", function () { actTsumo(); gameAfter(); }, canTsumo));
+      callPanel.style.display = "grid"; winPanel.style.display = "flex";   // always there, lit only when the move is possible
+      armCallTimer(S, !!callWait);
+      gameHud.textContent = S.over ? gameResultText(S, names) : (S.phase === "discard" && S.turn === 0 ? "Your turn: click a tile to discard" : (callWait ? "Call available: take it, or let it go (passes by itself in " + (GM.callLeft || CALL_WINDOW) + "s)" : "Waiting for " + names[S.turn]));
       if (GM.riichiMode && S.phase === "discard" && S.turn === 0) gameHud.textContent = "Riichi: click the tile to discard";
       gameHud.style.pointerEvents = "none";
     }
@@ -2784,29 +2860,30 @@ Rack: middle</pre>` },
       var yk = (r.yakuman || []).map(function (y) { return y.name + (y.double ? " (double)" : ""); });
       return "Hand over: " + (r.winner === 0 ? "you win" : names[r.winner] + " wins") + (r.riichi ? " after riichi" : "") + " by " + r.type + shape + how + (yk.length ? " - yakuman: " + yk.join(", ") : "");
     }
-    function panelButton(text, col, fn) {
+    function panelButton(text, col, fn, enabled) {     // a button that is always there; it only works (and only looks lit) when the move is possible
+      var on = enabled !== false;
       var b = document.createElement("button");
-      b.type = "button"; b.textContent = text;
-      b.style.cssText = "display:block;margin:0;font:18px MGPixel, monospace;font-weight:bold;background:" + col + ";color:#111;border:0;padding:12px 18px;min-width:120px;cursor:pointer;box-shadow:inset -3px -3px 0 rgba(0,0,0,.35);";
-      b.addEventListener("click", fn);
+      b.type = "button"; b.textContent = text; b.disabled = !on;
+      b.style.cssText = "display:block;margin:0;font:18px MGPixel, monospace;font-weight:bold;background:" + col + ";color:#111;border:0;padding:12px 18px;min-width:120px;box-shadow:inset -3px -3px 0 rgba(0,0,0,.35);" + (on ? "cursor:pointer;" : "cursor:not-allowed;opacity:.32;filter:grayscale(.75);");
+      if (on) b.addEventListener("click", fn);
       return b;
     }
-    function gameCallButtons(S) {
-      var opts = S.queue[0].opts;
-      function button(text, fn, col) {
-        var b = document.createElement("button");
-        b.type = "button"; b.textContent = text;
-        b.style.cssText = "display:block;margin:0;font:18px MGPixel, monospace;font-weight:bold;background:" + (col || "#cfc5b5") + ";color:#111;border:0;padding:12px 18px;min-width:120px;cursor:pointer;box-shadow:inset -3px -3px 0 rgba(0,0,0,.35);";
-        b.addEventListener("click", function () { fn(); gameAfter(); });
-        callPanel.appendChild(b);
-      }
-      
-      opts.forEach(function (o) {
-        if (o.type === "ron") return;   // ron is in the bottom-right panel
-        else if (o.type === "pon") button("Pon", function () { actCall(o); }, "#f2d200");
-        else if (o.type === "kan") button("Kan", function () { actCall(o); }, "#3aa846");
-        else if (o.type === "chi") button("Chi " + o.seq.map(function (t) { return MJ.LABEL[t]; }).join(" "), function () { actCall(o); }, "#2e9db5");
-      });
+    // A call is never forced: leave it alone and it passes by itself after a few seconds.
+    var CALL_WINDOW = 6;
+    function passCall() {
+      var S = GM.G; if (!S || S.phase !== "call") return;
+      if (GM.callTick) { clearInterval(GM.callTick); GM.callTick = null; }
+      actCall(null); gameAfter();
+    }
+    function armCallTimer(S, waiting) {
+      if (!waiting) { if (GM.callTick) { clearInterval(GM.callTick); GM.callTick = null; } GM.callLeft = 0; return; }
+      if (GM.callTick) return;                          // already counting down for this call
+      GM.callLeft = CALL_WINDOW;
+      GM.callTick = setInterval(function () {
+        GM.callLeft--;
+        if (GM.callLeft <= 0) passCall();
+        else gameHud.textContent = "Call available: take it, or let it go (passes by itself in " + GM.callLeft + "s)";
+      }, 1000);
     }
     // Sort button at the bottom middle: orders your hand by tile type, ascending
     var sortBtn = document.createElement("button");
@@ -3203,6 +3280,7 @@ Rack: middle</pre>` },
         b.c.style.top = ((-v.y * 0.5 + 0.5) * ov.clientHeight) + "px";
       });
       rend.render(sc2, cam2);
+      drawHand();
       raf = requestAnimationFrame(frame);
     }
     if (window.mahjongRoom > 10) netStart(window.mahjongRoom);
