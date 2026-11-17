@@ -3054,7 +3054,7 @@ Rack: middle</pre>` },
     var dealer = opts.dealer !== undefined ? opts.dealer : Math.floor(rand() * 4);
     var roundWind = Math.floor(rand() * 4);
     var S = {
-      wall: MJ.newWall(rand), hands: [[], [], [], []], melds: [[], [], [], []], discards: [[], [], [], []],
+      wall: MJ.newWall(rand).reverse(),   // pop() now takes the wall in order: each stack's top, then its bottom, along the wall hands: [[], [], [], []], melds: [[], [], [], []], discards: [[], [], [], []],
       dealer: dealer, roundWind: roundWind, seatWind: [0, 1, 2, 3].map(function (s) { return 27 + (s - dealer + 4) % 4; }),
       turn: dealer, phase: 'discard', queue: [], over: false, result: null, human: opts.human === undefined ? 0 : opts.human,
       last: null, canTsumo: false, rand: rand
