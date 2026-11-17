@@ -2836,9 +2836,17 @@ Rack: middle</pre>` },
         row.textContent = startNames[s] + ': ' + WINDS[(s - starter + 4) % 4];
         panel.appendChild(row);
       }
-      ov.appendChild(panel);
+      censorBoxes.forEach(function (b) { b.c.remove(); }); censorBoxes = [];
+      [[1, 8, 1.6, 0.6], [2, 0, 1.6, -8.2], [3, -8, 1.6, 0.6]].forEach(function (sp) {
+        var seat = sp[0], c = document.createElement("div");
+        c.style.cssText = "position:absolute;background:#000;color:#fff;font:16px MGPixel, monospace;padding:3px 8px;border:2px solid #000;pointer-events:none;white-space:nowrap;transform:translate(-50%,-50%);";
+        c.textContent = WINDS[(seat - starter + 4) % 4];
+        ov.appendChild(c);
+        censorBoxes.push({ c: c, p: new THREE.Vector3(sp[1], sp[2], sp[3]) });
+      });
     }
     var hoverD = null;   // the hand tile under the pointer, if any
+    var censorBoxes = [];   // black boxes with each opponent's wind, over their faces
     function ease(x) { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); }
     function frame() {
       var T = (performance.now() - t0) / 1000;
@@ -2882,6 +2890,12 @@ Rack: middle</pre>` },
       seatMats.forEach(function (m) { m.opacity = 0.2 * ease((T - 5.5) / 1.5); }); floorMat.roughness = 0.05 + 0.5 * ease((T - 1.5) / 3);   // roughness fades in with the colour change
       spot.position.set(0, 9, 0.5);
       sweep.position.set(6 * Math.cos(T * 0.5), 5, 5 * Math.sin(T * 0.5));
+      censorBoxes.forEach(function (b) {
+        var v = b.p.clone().project(cam2);
+        b.c.style.display = v.z > 1 ? "none" : "block";
+        b.c.style.left = ((v.x * 0.5 + 0.5) * ov.clientWidth) + "px";
+        b.c.style.top = ((-v.y * 0.5 + 0.5) * ov.clientHeight) + "px";
+      });
       rend.render(sc2, cam2);
       raf = requestAnimationFrame(frame);
     }
