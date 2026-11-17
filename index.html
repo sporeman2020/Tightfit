@@ -2591,7 +2591,7 @@ Rack: middle</pre>` },
     // a wall stack: 17 along each side, two tiles high, lying flat on the table
     function wallStack(x0, z0, dx, dz, n, yaw, sx, edge) { if (sx === undefined) sx = 1;
       for (var i = 0; i < n; i++) for (var k = 0; k < 2; k++) {
-        var m = makePiece(); m.scale.set(0.648, 0.765 * 0.8, 0.765 * 0.8);
+        var m = makePiece(); m.scale.set(Math.max(Math.abs(dx), Math.abs(dz)) * 0.9 / 0.5 * 0.8, 0.765 * 0.8, 0.765 * 0.8);
         m.rotation.order = "YXZ"; m.rotation.x = -Math.PI / 2; m.rotation.y = yaw; m.userData.side = (yaw === Math.PI / 2) ? 'west' : 'other'; m.userData.idx = i; m.userData.layer = k; m.userData.edge = edge;
         m.position.set(x0 + dx * i * 0.9, 0.14 + k * 0.27, z0 + dz * i * 0.9);   // layers lifted so the tile thickness (0.26) does not overlap
         tableGroup.add(m);
@@ -2604,7 +2604,7 @@ Rack: middle</pre>` },
       tableGroup.children.forEach(function (c) { if (c.userData.edge === edge && c.userData.idx === idx && c.userData.layer === L) found = c; });
       return found;
     }
-    function wall(x0, z0, dx, dz, n, rot, flip, edge) { if (flip === undefined) flip = true; for (var i = 0; i < n; i++) { var m = makePiece(); m.scale.set(0.648, 0.765 * 0.8, 0.765 * 0.8); m.rotation.y = rot + (flip ? Math.PI : 0); var to = new THREE.Vector3(x0 + dx * i * 0.9, 0.2754, z0 + dz * i * 0.9);
+    function wall(x0, z0, dx, dz, n, rot, flip, edge) { if (flip === undefined) flip = true; for (var i = 0; i < n; i++) { var m = makePiece(); m.scale.set(Math.max(Math.abs(dx), Math.abs(dz)) * 0.9 / 0.5 * 0.8, 0.765 * 0.8, 0.765 * 0.8); m.rotation.y = rot + (flip ? Math.PI : 0); var to = new THREE.Vector3(x0 + dx * i * 0.9, 0.2754, z0 + dz * i * 0.9);
       // each tile is taken from the wall on its own side of the table, at the height of the top layer
       // the 14th tile (the dealer's extra) comes from the bottom layer at the end of the wall
       var extra = i === 13;
