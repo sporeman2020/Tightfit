@@ -2171,7 +2171,33 @@ Rack: middle</pre>` },
   boardEl.style.cssText = "position:absolute;left:0;right:0;top:16%;text-align:center;font:20px 'MGPixel','MS Sans Serif',sans-serif;color:#fff;letter-spacing:.06em;opacity:0;transition:opacity .9s;pointer-events:none;z-index:3;";
   wrap.appendChild(boardEl);
   var boardText = "";
-  function setBoard(text) { if (text === boardText) return; boardText = text; boardEl.textContent = text; boardEl.style.opacity = text ? "1" : "0"; }
+  var boardSeen = {}, audioCtx = null;
+  // two low, weird drones with a falling pitch: built from oscillators, so there are no sound files
+  function playBoardNoise() {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === "suspended") audioCtx.resume();
+      var now = audioCtx.currentTime;
+      [0, 0.75].forEach(function (off, k) {
+        var o = audioCtx.createOscillator(), g = audioCtx.createGain();
+        o.type = "sawtooth";
+        o.frequency.setValueAtTime(58 + k * 19, now + off);
+        o.frequency.exponentialRampToValueAtTime(21, now + off + 1.4);
+        g.gain.setValueAtTime(0.0001, now + off);
+        g.gain.exponentialRampToValueAtTime(0.22, now + off + 0.1);
+        g.gain.exponentialRampToValueAtTime(0.0001, now + off + 1.4);
+        o.connect(g); g.connect(audioCtx.destination);
+        o.start(now + off); o.stop(now + off + 1.5);
+      });
+    } catch (e) { }
+  }
+  // each board message appears once, and plays its noise then
+  function setBoard(text) {
+    if (text === boardText) return;
+    if (text && boardSeen[text]) return;
+    if (text) { boardSeen[text] = true; playBoardNoise(); }
+    boardText = text; boardEl.textContent = text; boardEl.style.opacity = text ? "1" : "0";
+  }
   var kal = { on: false, done: false, t: 0, next: 2, glitches: 0, glitchFrames: 0, camPos: null };
   function kaleidoStep(dt) {                                                                           // rotate, sink, kaleidoscope; then glitch back a few frames, three times
     kal.t += dt;
