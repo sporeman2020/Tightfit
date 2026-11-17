@@ -2171,7 +2171,7 @@ Rack: middle</pre>` },
   boardEl.style.cssText = "position:absolute;left:0;right:0;top:16%;text-align:center;font:20px 'MGPixel','MS Sans Serif',sans-serif;color:#fff;letter-spacing:.06em;opacity:0;transition:opacity .9s;pointer-events:none;z-index:3;";
   wrap.appendChild(boardEl);
   var boardText = "";
-  var boardSeen = {}, audioCtx = null;
+  var boardSeen = {}, audioCtx = null, boardReady = false;   // the walk waits for the first board message to be written
   // two low, weird drones with a falling pitch: built from oscillators, so there are no sound files
   function playBoardNoise() {
     try {
@@ -2195,7 +2195,7 @@ Rack: middle</pre>` },
   function setBoard(text) {
     if (text === boardText) return;
     if (text && boardSeen[text]) return;
-    if (text) { boardSeen[text] = true; playBoardNoise(); }
+    if (text) { boardSeen[text] = true; playBoardNoise(); if (!boardReady) setTimeout(function () { boardReady = true; }, 1500); }
     boardText = text; boardEl.textContent = text; boardEl.style.opacity = text ? "1" : "0";
   }
   var kal = { on: false, done: false, t: 0, next: 2, glitches: 0, glitchFrames: 0, camPos: null };
@@ -2255,7 +2255,7 @@ Rack: middle</pre>` },
     if (!pst.final && T > 45) { voidSphere.visible = true; voidSphere.position.copy(hed.position); voidSphere.scale.setScalar(Math.max(0.001, 470 * vp)); setBoard("BOARD: Intrusion/Invasion/Invalid Occupant"); }
     if (kal.on) { kaleidoStep(dt); cam.position.copy(kal.camPos); cam.lookAt(pst.hedWorld); voidSphere.visible = false; sPrompt.style.display = "none"; return; }
     if (pst.final) { voidSphere.visible = false; sPrompt.style.display = "none"; if (!tunnelOn) startTunnel(); tunnelStep(T); cam.position.copy(tunnelC); cam.lookAt(tunnelC.x, tunnelC.y, tunnelC.z - 1); return; }
-    if (T < 14) return;
+    if (T < 14 || !boardReady) return;   // the figure only starts once the first board message is written
     if (!pst.on) { pst.on = true; person.visible = true; pst.x = 0; pst.y = 0; pst.vy = 0; pst.z = 22; pst.hedWorld.copy(hed.position); }
     var fwd = 0, back = (keysDown.ArrowDown || keysDown.s) ? 1 : 0;   // W is disabled for now
     var side = (keysDown.ArrowRight || keysDown.d) ? 1 : ((keysDown.ArrowLeft || keysDown.a) ? -1 : 0);
