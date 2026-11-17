@@ -2900,7 +2900,7 @@ Rack: middle</pre>` },
         arrowGroup.rotation.y = (thetaT + 12 * Math.PI) * eo;
         if (at >= 1) { arrowDone = true; startLbl.textContent = startNames[starter] + (starter === 0 ? ' are' : ' is') + ' East'; startLbl.style.opacity = '1'; setTimeout(function () { startLbl.style.opacity = '0'; }, 2500); setupWinds(); remapDeal(starter); }
       }
-      if (arrowDone && T > 4.5) { if (!westSet && T > 8) { westSet = true; setupWestWall(); }   // after the four players' initial tiles are drawn tableGroup.visible = true; }
+      if (arrowDone && T > 4.5) { if (!westSet) { westSet = true; }   // the walls stay at their initial positions; tiles only move when drawn tableGroup.visible = true; }
       if (!GM.started && arrowDone && T > 9) gameStart(starter);
       // dealing: each hand tile leaves its wall and slides into its place, one after another after the lamp
       dealt.forEach(function (d) {
