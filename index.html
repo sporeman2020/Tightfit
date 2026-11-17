@@ -2610,7 +2610,7 @@ Rack: middle</pre>` },
       var extra = i === 13;
       var src = extra ? findSrc(edge, 16, 0) : findSrc(edge, 4 + i);
       m.children[1].material = src.children[1].material;   // the tile keeps the type of the wall piece it came from (on its white side)
-      dealt.push({ m: m, src: src, to: to, k: dealt.length, extra: extra, edge: edge, base: m.scale.clone(), hov: 0 }); m.visible = false; tableGroup.add(m); } }
+      dealt.push({ m: m, src: src, to: to, k: dealt.length, extra: extra, edge: edge, ri: i, base: m.scale.clone(), hov: 0 }); m.visible = false; tableGroup.add(m); } }
     // wall stacks: 17 across, two high, on each side
     // all four sides run 17 stacks at the same spacing, so the ring is a true square (±3.6 along each side)
     // every seat has a discard area in its quadrant: 4 columns by 6 rows of empty slots, outlined until discards are dealt in
@@ -2845,6 +2845,21 @@ Rack: middle</pre>` },
         censorBoxes.push({ c: c, p: new THREE.Vector3(sp[1], sp[2], sp[3]) });
       });
     }
+    // the visual deal takes each tile from the stack the engine draws it from: the walls in order S, E, N, W
+    function remapDeal(dealer) {
+      var jList = [[], [], [], []], j = 0, order = [0, 1, 2, 3].map(function (i) { return (dealer + i) % 4; });
+      for (var r = 0; r < 3; r++) order.forEach(function (sp) { for (var q = 0; q < 4; q++) jList[sp].push(j++); });
+      order.forEach(function (sp) { jList[sp].push(j++); });
+      jList[dealer].push(j++);
+      var rowSeat = { S: 0, E: 1, N: 2, W: 3 }, wallEdge = ['S', 'E', 'N', 'W'];
+      dealt.forEach(function (d) {
+        if (d.game || rowSeat[d.edge] === undefined) return;
+        var list = jList[rowSeat[d.edge]];
+        if (d.ri >= list.length) return;
+        var jj = list[d.ri], w = Math.floor(jj / 34), m2 = jj % 34, k2 = Math.floor(m2 / 2), layer = m2 % 2 === 0 ? 1 : 0;
+        d.src = findSrc(wallEdge[w], k2, layer);
+      });
+    }
     var hoverD = null;   // the hand tile under the pointer, if any
     var censorBoxes = [];   // black boxes with each opponent's wind, over their faces
     function ease(x) { x = Math.max(0, Math.min(1, x)); return x * x * (3 - 2 * x); }
@@ -2854,7 +2869,7 @@ Rack: middle</pre>` },
         var at = Math.min(1, T / 4), eo = 1 - Math.pow(1 - at, 3);
         var dd = startSeats[starter], thetaT = Math.atan2(-dd[1], dd[0]);
         arrowGroup.rotation.y = (thetaT + 12 * Math.PI) * eo;
-        if (at >= 1) { arrowDone = true; startLbl.textContent = startNames[starter] + (starter === 0 ? ' are' : ' is') + ' East'; startLbl.style.opacity = '1'; setTimeout(function () { startLbl.style.opacity = '0'; }, 2500); setupWinds(); }
+        if (at >= 1) { arrowDone = true; startLbl.textContent = startNames[starter] + (starter === 0 ? ' are' : ' is') + ' East'; startLbl.style.opacity = '1'; setTimeout(function () { startLbl.style.opacity = '0'; }, 2500); setupWinds(); remapDeal(starter); }
       }
       if (arrowDone && T > 4.5) { if (!westSet && T > 8) { westSet = true; setupWestWall(); }   // after the four players' initial tiles are drawn tableGroup.visible = true; }
       if (!GM.started && arrowDone && T > 9) gameStart(starter);
