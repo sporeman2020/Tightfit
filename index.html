@@ -3069,7 +3069,7 @@ Rack: middle</pre>` },
   }
 
   function draw(S, seat) {
-    if (S.wall.length === 0) { S.over = true; S.result = { type: 'exhausted' }; return null; }
+    if (S.wall.length <= 34) { S.over = true; S.result = { type: 'exhausted' }; return null; }   // the last 34 tiles are the dead wall (the West wall), never drawn
     var t = S.wall.pop();
     S.hands[seat].push(t);
     return t;
