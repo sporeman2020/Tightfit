@@ -3246,6 +3246,13 @@ Rack: middle</pre>` },
 }
 </style><script>
 // Four-player riichi-style mahjong engine: tiles, wall, hands, calls (pon, chi, kan), ron and tsumo.
+//
+// WHAT THE ENGINE IS WORKING TOWARDS (the full list lives in MJ.WIN_SHAPES, MJ.WIN_METHODS and MJ.YAKUMAN below):
+//   Win shapes:   standard hand (four sets + a pair), seven pairs, thirteen orphans.
+//   Win methods:  tsumo (self-draw) and ron (off a discard), with the special circumstances rinshan kaihou, chankan, haitei and houtei.
+//   Yakuman:      kokushi musou, suuankou, daisangen, shousuushii, daisuushii, tsuuiisou, chinroutou, ryuuiisou, chuuren poutou, suukantsu,
+//                 tenhou, chiihou (and renhou, optional). Double-yakuman variants are marked on the entries.
+//   Built today:  only the standard hand (canWin). Every other entry carries built:false until its detector exists.
 // Tile types: 0-8 characters (1-9), 9-17 circles, 18-26 bamboo, 27-30 winds (E S W N), 31-33 dragons (haku hatsu chun).
 (function (root) {
   var LABEL = ['一','二','三','四','五','六','七','八','九','一','二','三','四','五','六','七','八','九','1','2','3','4','5','6','7','8','9','東','南','西','北','白','發','中'];
@@ -3339,7 +3346,44 @@ Rack: middle</pre>` },
     return best;
   }
 
-  root.MJ = { LABEL: LABEL, SUIT: SUIT, newWall: newWall, canWin: canWin, callOptions: callOptions, aiDiscard: aiDiscard, removeOne: removeOne, counts: counts };
+
+  // ---- the acceptable wins and yakuman, as data (tile types: 0-8 characters, 9-17 circles, 18-26 bamboo, 27-30 winds E S W N, 31-33 dragons haku hatsu chun) ----
+  var TERMINALS = [0, 8, 9, 17, 18, 26], HONOURS = [27, 28, 29, 30, 31, 32, 33], ORPHANS = TERMINALS.concat(HONOURS);
+  var GREEN = [19, 20, 21, 23, 25, 32];                 // ryuuiisou: bamboo 2 3 4 6 8 and the green dragon (hatsu)
+
+  var WIN_SHAPES = [
+    { id: 'standard',   name: 'Standard hand',    jp: '通常形',   concealedOnly: false, built: true,  desc: 'Four sets (triplets or sequences; called sets count) and one pair.' },
+    { id: 'chiitoitsu', name: 'Seven pairs',      jp: '七対子',   concealedOnly: true,  built: false, desc: 'Seven different pairs, fully concealed. Four of one tile is not two pairs.' },
+    { id: 'kokushi',    name: 'Thirteen orphans', jp: '国士無双', concealedOnly: true,  built: false, desc: 'One of each terminal and honour (13 tiles) plus a duplicate of any one of them. Also a yakuman.' }
+  ];
+
+  var WIN_METHODS = [
+    { id: 'tsumo', name: 'Tsumo', jp: 'ツモ', desc: 'Complete the hand with your own draw.' },
+    { id: 'ron',   name: 'Ron',   jp: 'ロン', desc: 'Complete the hand on another player\u2019s discard. Not allowed if any tile that completes your hand is in your own discards (furiten).' },
+    { id: 'rinshan', name: 'Rinshan kaihou',  jp: '嶺上開花', desc: 'Win on the replacement tile drawn after declaring a kan.' },
+    { id: 'chankan', name: 'Chankan',         jp: '搶槓',     desc: 'Win by ron on the tile another player adds to a pon to make a kan.' },
+    { id: 'haitei',  name: 'Haitei raoyue',   jp: '海底摸月', desc: 'Tsumo on the very last tile of the live wall.' },
+    { id: 'houtei',  name: 'Houtei raoyui',   jp: '河底撈魚', desc: 'Ron on the very last discard of the game.' }
+  ];
+
+  // Yakuman. double:true marks the entries many tables score as double yakuman in their special form; optional:true means off unless the table turns it on.
+  var YAKUMAN = [
+    { id: 'kokushi',    name: 'Kokushi musou',      jp: '国士無双', concealedOnly: true,  double: 'thirteen-sided wait', desc: 'Thirteen orphans: one of every terminal and honour plus a duplicate.' },
+    { id: 'suuankou',   name: 'Suuankou',           jp: '四暗刻',   concealedOnly: true,  double: 'single (pair) wait',  desc: 'Four concealed triplets. A ron that completes a triplet makes it open, so it only counts on tsumo, or on a pair wait.' },
+    { id: 'daisangen',  name: 'Daisangen',          jp: '大三元',   concealedOnly: false, double: false,                 desc: 'Triplets (or kans) of all three dragons: haku, hatsu and chun.' },
+    { id: 'shousuushii', name: 'Shousuushii',       jp: '小四喜',   concealedOnly: false, double: false,                 desc: 'Little four winds: triplets of three winds and the pair is the fourth wind.' },
+    { id: 'daisuushii', name: 'Daisuushii',         jp: '大四喜',   concealedOnly: false, double: true,                  desc: 'Big four winds: triplets (or kans) of all four winds.' },
+    { id: 'tsuuiisou',  name: 'Tsuuiisou',          jp: '字一色',   concealedOnly: false, double: false,                 desc: 'All honours: every tile is a wind or a dragon.' },
+    { id: 'chinroutou', name: 'Chinroutou',         jp: '清老頭',   concealedOnly: false, double: false,                 desc: 'All terminals: every tile is a 1 or a 9 of a suit.' },
+    { id: 'ryuuiisou',  name: 'Ryuuiisou',          jp: '緑一色',   concealedOnly: false, double: false,                 desc: 'All green: only bamboo 2, 3, 4, 6, 8 and the green dragon (hatsu).' },
+    { id: 'chuuren',    name: 'Chuuren poutou',     jp: '九蓮宝燈', concealedOnly: true,  double: 'nine-sided wait',     desc: 'Nine gates: 1112345678999 in one suit plus any one more tile of that suit.' },
+    { id: 'suukantsu',  name: 'Suukantsu',          jp: '四槓子',   concealedOnly: false, double: false,                 desc: 'Four kans, and the pair.' },
+    { id: 'tenhou',     name: 'Tenhou',             jp: '天和',     concealedOnly: true,  double: false,                 desc: 'Heavenly hand: the dealer wins on the opening deal, before any discard.' },
+    { id: 'chiihou',    name: 'Chiihou',            jp: '地和',     concealedOnly: true,  double: false,                 desc: 'Earthly hand: a non-dealer wins on their very first draw, with no call having been made.' },
+    { id: 'renhou',     name: 'Renhou',             jp: '人和',     concealedOnly: true,  double: false, optional: true, desc: 'Hand of man: a non-dealer wins by ron on a discard before their own first draw. Optional rule.' }
+  ].map(function (y) { y.built = false; return y; });    // none of the yakuman detectors exist yet
+  root.MJ = { LABEL: LABEL, SUIT: SUIT, newWall: newWall, canWin: canWin, callOptions: callOptions, aiDiscard: aiDiscard, removeOne: removeOne, counts: counts,
+    WIN_SHAPES: WIN_SHAPES, WIN_METHODS: WIN_METHODS, YAKUMAN: YAKUMAN, TERMINALS: TERMINALS, HONOURS: HONOURS, ORPHANS: ORPHANS, GREEN: GREEN };
 })(typeof window !== 'undefined' ? window : globalThis);
 
 </script>
