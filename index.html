@@ -2773,9 +2773,16 @@ Rack: middle</pre>` },
       if (canTsumo) winPanel.appendChild(panelButton("Tsumo", "#f2d200", function () { actTsumo(); gameAfter(); }));
       winPanel.style.display = (canRon || canTsumo) ? "flex" : "none";
       callPanel.style.display = callPanel.children.length ? "grid" : "none";   // the left panel only shows when it has a button
-      gameHud.textContent = S.over ? "Hand over" : (S.phase === "discard" && S.turn === 0 ? "Your turn: click a tile to discard" : (callWait ? "Call available" : "Waiting for " + names[S.turn]));
+      gameHud.textContent = S.over ? gameResultText(S, names) : (S.phase === "discard" && S.turn === 0 ? "Your turn: click a tile to discard" : (callWait ? "Call available" : "Waiting for " + names[S.turn]));
       if (GM.riichiMode && S.phase === "discard" && S.turn === 0) gameHud.textContent = "Riichi: click the tile to discard";
       gameHud.style.pointerEvents = "none";
+    }
+    function gameResultText(S, names) {                // who won, how, and every yakuman the hand held
+      var r = S.result; if (!r || r.winner === undefined) return "Hand over";
+      var shape = { standard: "", chiitoitsu: " (seven pairs)", kokushi: " (thirteen orphans)" }[r.shape] || "";
+      var how = { rinshan: ", rinshan kaihou", haitei: ", haitei raoyue", houtei: ", houtei raoyui" }[r.how] || "";
+      var yk = (r.yakuman || []).map(function (y) { return y.name + (y.double ? " (double)" : ""); });
+      return "Hand over: " + (r.winner === 0 ? "you win" : names[r.winner] + " wins") + (r.riichi ? " after riichi" : "") + " by " + r.type + shape + how + (yk.length ? " - yakuman: " + yk.join(", ") : "");
     }
     function panelButton(text, col, fn) {
       var b = document.createElement("button");
@@ -3252,7 +3259,8 @@ Rack: middle</pre>` },
 //   Win methods:  tsumo (self-draw) and ron (off a discard), with the special circumstances rinshan kaihou, chankan, haitei and houtei.
 //   Yakuman:      kokushi musou, suuankou, daisangen, shousuushii, daisuushii, tsuuiisou, chinroutou, ryuuiisou, chuuren poutou, suukantsu,
 //                 tenhou, chiihou (and renhou, optional). Double-yakuman variants are marked on the entries.
-//   Built today:  only the standard hand (canWin). Every other entry carries built:false until its detector exists.
+//   Detection:    canWin accepts all three shapes; MJ.winShape names the shape; MJ.detectYakuman lists every yakuman a winning hand holds (double flags included);
+//                 the table records both on S.result. Wins are allowed for any of them, whether it is a plain mahjong or a yakuman, with or without a riichi call.
 // Tile types: 0-8 characters (1-9), 9-17 circles, 18-26 bamboo, 27-30 winds (E S W N), 31-33 dragons (haku hatsu chun).
 (function (root) {
   var LABEL = ['一','二','三','四','五','六','七','八','九','一','二','三','四','五','六','七','八','九','1','2','3','4','5','6','7','8','9','東','南','西','北','白','發','中'];
@@ -3300,6 +3308,7 @@ Rack: middle</pre>` },
   function canWin(hand, meldCount) {
     var sets = 4 - meldCount;
     if (hand.length !== sets * 3 + 2) return false;
+    if (meldCount === 0 && (isSevenPairs(hand) || isThirteenOrphans(hand))) return true;   // seven pairs and thirteen orphans are wins too (concealed only)
     return canDecompose(counts(hand), sets, true);
   }
 
@@ -3353,13 +3362,13 @@ Rack: middle</pre>` },
 
   var WIN_SHAPES = [
     { id: 'standard',   name: 'Standard hand',    jp: '通常形',   concealedOnly: false, built: true,  desc: 'Four sets (triplets or sequences; called sets count) and one pair.' },
-    { id: 'chiitoitsu', name: 'Seven pairs',      jp: '七対子',   concealedOnly: true,  built: false, desc: 'Seven different pairs, fully concealed. Four of one tile is not two pairs.' },
-    { id: 'kokushi',    name: 'Thirteen orphans', jp: '国士無双', concealedOnly: true,  built: false, desc: 'One of each terminal and honour (13 tiles) plus a duplicate of any one of them. Also a yakuman.' }
+    { id: 'chiitoitsu', name: 'Seven pairs',      jp: '七対子',   concealedOnly: true,  built: true,  desc: 'Seven different pairs, fully concealed. Four of one tile is not two pairs.' },
+    { id: 'kokushi',    name: 'Thirteen orphans', jp: '国士無双', concealedOnly: true,  built: true,  desc: 'One of each terminal and honour (13 tiles) plus a duplicate of any one of them. Also a yakuman.' }
   ];
 
   var WIN_METHODS = [
     { id: 'tsumo', name: 'Tsumo', jp: 'ツモ', desc: 'Complete the hand with your own draw.' },
-    { id: 'ron',   name: 'Ron',   jp: 'ロン', desc: 'Complete the hand on another player\u2019s discard. Not allowed if any tile that completes your hand is in your own discards (furiten).' },
+    { id: 'ron',   name: 'Ron',   jp: 'ロン', desc: 'Complete the hand on another player\u2019s discard.' },
     { id: 'rinshan', name: 'Rinshan kaihou',  jp: '嶺上開花', desc: 'Win on the replacement tile drawn after declaring a kan.' },
     { id: 'chankan', name: 'Chankan',         jp: '搶槓',     desc: 'Win by ron on the tile another player adds to a pon to make a kan.' },
     { id: 'haitei',  name: 'Haitei raoyue',   jp: '海底摸月', desc: 'Tsumo on the very last tile of the live wall.' },
@@ -3381,8 +3390,89 @@ Rack: middle</pre>` },
     { id: 'tenhou',     name: 'Tenhou',             jp: '天和',     concealedOnly: true,  double: false,                 desc: 'Heavenly hand: the dealer wins on the opening deal, before any discard.' },
     { id: 'chiihou',    name: 'Chiihou',            jp: '地和',     concealedOnly: true,  double: false,                 desc: 'Earthly hand: a non-dealer wins on their very first draw, with no call having been made.' },
     { id: 'renhou',     name: 'Renhou',             jp: '人和',     concealedOnly: true,  double: false, optional: true, desc: 'Hand of man: a non-dealer wins by ron on a discard before their own first draw. Optional rule.' }
-  ].map(function (y) { y.built = false; return y; });    // none of the yakuman detectors exist yet
+  ].map(function (y) { y.built = true; return y; });    // every yakuman is detected by MJ.detectYakuman
+  // ---- detection: win shapes and yakuman ----
+  function isSevenPairs(hand) {                           // seven different pairs; four of one tile is not two pairs
+    if (hand.length !== 14) return false;
+    var c = counts(hand), pairs = 0;
+    for (var i = 0; i < 34; i++) { if (c[i] === 2) pairs++; else if (c[i] !== 0) return false; }
+    return pairs === 7;
+  }
+  function isThirteenOrphans(hand) {                      // one of each terminal and honour, plus one duplicate
+    if (hand.length !== 14) return false;
+    var c = counts(hand), dup = 0;
+    for (var i = 0; i < 34; i++) {
+      if (ORPHANS.indexOf(i) < 0) { if (c[i]) return false; continue; }
+      if (c[i] === 0 || c[i] > 2) return false;
+      if (c[i] === 2) dup++;
+    }
+    return dup === 1;
+  }
+  // Every way the concealed tiles split into the remaining sets and a pair: [{ sets: [{type:'trip'|'seq', t}], pair }]
+  function decompositions(hand, meldCount) {
+    var out = [], c = counts(hand), cur = [];
+    (function rec(sets, needPair, pair) {
+      var i = 0; while (i < 34 && c[i] === 0) i++;
+      if (i === 34) { if (sets === 0 && !needPair) out.push({ sets: cur.slice(), pair: pair }); return; }
+      if (c[i] >= 3 && sets > 0) { c[i] -= 3; cur.push({ type: 'trip', t: i }); rec(sets - 1, needPair, pair); cur.pop(); c[i] += 3; }
+      if (i < 27 && (i % 9) <= 6 && sets > 0 && c[i + 1] > 0 && c[i + 2] > 0) { c[i]--; c[i + 1]--; c[i + 2]--; cur.push({ type: 'seq', t: i }); rec(sets - 1, needPair, pair); cur.pop(); c[i]++; c[i + 1]++; c[i + 2]++; }
+      if (needPair && c[i] >= 2) { c[i] -= 2; rec(sets, false, i); c[i] += 2; }
+    })(4 - meldCount, true, -1);
+    return out;
+  }
+  function winShape(hand, meldCount) {                    // 'kokushi' | 'chiitoitsu' | 'standard' | null
+    if (meldCount === 0 && isThirteenOrphans(hand)) return 'kokushi';
+    if (meldCount === 0 && isSevenPairs(hand)) return 'chiitoitsu';
+    return hand.length === (4 - meldCount) * 3 + 2 && canDecompose(counts(hand), 4 - meldCount, true) ? 'standard' : null;
+  }
+  // hand: the winning concealed tiles, winning tile included. melds: [{type:'pon'|'kan'|'chi', t, seq?}] (called sets are open).
+  // ctx: { tsumo, winTile, dealer, firstDraw, noCalls, renhou, firstRon }. Returns [{ id, name, jp, double }] for every yakuman the hand holds.
+  function detectYakuman(hand, melds, ctx) {
+    ctx = ctx || {}; melds = melds || [];
+    var found = {}, order = [], wt = ctx.winTile, concealed = melds.length === 0, c = counts(hand);
+    function add(id, dbl) { if (!found[id]) { found[id] = { id: id, double: !!dbl }; order.push(id); } else if (dbl) found[id].double = true; }
+    var all = hand.slice();
+    melds.forEach(function (m) {
+      if (m.type === 'pon') all.push(m.t, m.t, m.t);
+      else if (m.type === 'kan') all.push(m.t, m.t, m.t, m.t);
+      else if (m.type === 'chi') all.push(m.t, m.seq[0], m.seq[1]);
+    });
+    // thirteen orphans (double on the thirteen-sided wait: the winning tile is the duplicate)
+    if (concealed && isThirteenOrphans(hand)) add('kokushi', wt !== undefined && c[wt] === 2);
+    // nine gates (double on the nine-sided wait: the winning tile is the extra one)
+    if (concealed && hand[0] < 27) {
+      var suit = Math.floor(hand[0] / 9), base = [3, 1, 1, 1, 1, 1, 1, 1, 3], ok = hand.every(function (x) { return Math.floor(x / 9) === suit && x < 27; }), extra = -1;
+      for (var k = 0; ok && k < 9; k++) { var d = c[suit * 9 + k] - base[k]; if (d < 0 || d > 1) ok = false; else if (d === 1) { if (extra >= 0) ok = false; extra = k; } }
+      if (ok && extra >= 0) add('chuuren', wt !== undefined && wt === suit * 9 + extra);
+    }
+    var decs = decompositions(hand, melds.length);
+    if (decs.length) {                                    // the shapes below need four sets and a pair
+      if (all.every(function (x) { return x >= 27; })) add('tsuuiisou');
+      if (all.every(function (x) { return TERMINALS.indexOf(x) >= 0; })) add('chinroutou');
+      if (all.every(function (x) { return GREEN.indexOf(x) >= 0; })) add('ryuuiisou');
+      if (melds.filter(function (m) { return m.type === 'kan'; }).length === 4) add('suukantsu');
+      decs.forEach(function (dc) {
+        var trips = dc.sets.filter(function (s) { return s.type === 'trip'; }).map(function (s) { return s.t; });
+        melds.forEach(function (m) { if (m.type === 'pon' || m.type === 'kan') trips.push(m.t); });
+        if ([31, 32, 33].every(function (x) { return trips.indexOf(x) >= 0; })) add('daisangen');
+        var winds = trips.filter(function (x) { return x >= 27 && x <= 30; }).length;
+        if (winds === 4) add('daisuushii', true);
+        else if (winds === 3 && dc.pair >= 27 && dc.pair <= 30) add('shousuushii');
+        if (concealed && dc.sets.every(function (s) { return s.type === 'trip'; })) {        // four concealed triplets
+          if (ctx.tsumo || wt === undefined) add('suuankou', wt !== undefined && dc.pair === wt);
+          else if (dc.pair === wt) add('suuankou', true);                                    // a ron only keeps them concealed on the pair wait
+        }
+      });
+    }
+    if (ctx.tsumo && ctx.firstDraw && ctx.noCalls) add(ctx.dealer ? 'tenhou' : 'chiihou');
+    if (ctx.renhou && !ctx.tsumo && !ctx.dealer && ctx.firstRon && ctx.noCalls) add('renhou');
+    return order.map(function (id) {
+      var y = YAKUMAN.filter(function (z) { return z.id === id; })[0];
+      return { id: id, name: y.name, jp: y.jp, double: found[id].double };
+    });
+  }
   root.MJ = { LABEL: LABEL, SUIT: SUIT, newWall: newWall, canWin: canWin, callOptions: callOptions, aiDiscard: aiDiscard, removeOne: removeOne, counts: counts,
+    isSevenPairs: isSevenPairs, isThirteenOrphans: isThirteenOrphans, decompositions: decompositions, winShape: winShape, detectYakuman: detectYakuman,
     WIN_SHAPES: WIN_SHAPES, WIN_METHODS: WIN_METHODS, YAKUMAN: YAKUMAN, TERMINALS: TERMINALS, HONOURS: HONOURS, ORPHANS: ORPHANS, GREEN: GREEN };
 })(typeof window !== 'undefined' ? window : globalThis);
 
@@ -3404,7 +3494,8 @@ Rack: middle</pre>` },
       hands: [[], [], [], []], melds: [[], [], [], []], discards: [[], [], [], []], riichi: [false, false, false, false],
       dealer: dealer, roundWind: roundWind, seatWind: [0, 1, 2, 3].map(function (s) { return 27 + (s - dealer + 4) % 4; }),
       turn: dealer, phase: 'discard', queue: [], over: false, result: null, humans: opts.humans || [opts.human === undefined ? 0 : opts.human], human: (opts.humans || [opts.human === undefined ? 0 : opts.human])[0],
-      last: null, canTsumo: false, rand: rand
+      last: null, canTsumo: false, rand: rand,
+      drawn: [0, 0, 0, 0], lastDraw: [null, null, null, null], called: false, rinshanPending: false, renhou: !!opts.renhou   // tenhou/chiihou/renhou need each seat's draw count and whether anyone has called
     };
     // deal 13 each, then the dealer draws the 14th
     var order = [0, 1, 2, 3].map(function (i) { return (dealer + i) % 4; });   // East first, then clockwise
@@ -3419,12 +3510,13 @@ Rack: middle</pre>` },
     if (S.wall.length === 0) { S.over = true; S.result = { type: 'exhausted' }; return null; }   // no dead wall: draws run until the wall is empty
     var t = S.wall.pop();
     S.hands[seat].push(t);
+    S.drawn[seat]++; S.lastDraw[seat] = t;
     return t;
   }
 
   function startTurn(S) {
     S.phase = 'discard';
-    S.canTsumo = false;
+    S.canTsumo = false; S.rinshanPending = false;
     if (draw(S, S.turn) === null) return;
     var seat = S.turn;
     if (MJ.canWin(S.hands[seat], S.melds[seat].length)) {
@@ -3433,17 +3525,29 @@ Rack: middle</pre>` },
     }
   }
 
-  function win(S, seat, type, t) {
+  // Records how the hand was won: its shape (standard, seven pairs, thirteen orphans), every yakuman it holds, and any special circumstance.
+  // Any hand that is a win counts, whether it is a plain mahjong or a yakuman, and with or without a riichi call.
+  function win(S, seat, type, t, how) {
     S.over = true;
     S.phase = 'over';
-    S.result = { type: type, winner: seat, tile: t };
+    var tsumo = type === 'tsumo', hand = S.hands[seat].slice();
+    if (!tsumo) hand.push(t);
+    var wt = tsumo ? S.lastDraw[seat] : t;
+    var result = { type: type, winner: seat, tile: t };
+    result.shape = MJ.winShape(hand, S.melds[seat].length);
+    result.yakuman = MJ.detectYakuman(hand, S.melds[seat], { tsumo: tsumo, winTile: wt === null ? undefined : wt, dealer: seat === S.dealer, firstDraw: S.drawn[seat] === 1, noCalls: !S.called, renhou: S.renhou, firstRon: S.drawn[seat] === 0 });
+    if (how) result.how = how;                                                   // rinshan kaihou
+    else if (tsumo && S.wall.length === 0) result.how = 'haitei';                // tsumo on the last tile
+    else if (!tsumo && S.wall.length === 0) result.how = 'houtei';               // ron on the last discard
+    result.riichi = !!(S.riichi && S.riichi[seat]);                              // won after declaring riichi (it makes no difference to whether the hand counts)
+    S.result = result;
   }
 
   function discard(S, seat, t) {
     MJ.removeOne(S.hands[seat], t);
     S.discards[seat].push(t);
     S.last = { seat: seat, t: t };
-    S.canTsumo = false;
+    S.canTsumo = false; S.rinshanPending = false;
     buildQueue(S);
     processQueue(S);
   }
@@ -3496,13 +3600,20 @@ Rack: middle</pre>` },
     var t = S.last.t;
     if (opt.type === 'ron') { win(S, p, 'ron', t); return; }
     S.queue = [];
+    S.called = true;
     if (opt.type === 'pon' || opt.type === 'kan') {
       var n = opt.type === 'kan' ? 3 : 2;
       for (var i = 0; i < n; i++) MJ.removeOne(S.hands[p], t);
       S.melds[p].push({ type: opt.type, t: t });
       S.discards[S.last.seat].pop();                 // the called tile leaves that seat's discard pile
       S.turn = p;
-      if (opt.type === 'kan') { draw(S, p); }        // kan draws a replacement tile
+      if (opt.type === 'kan') {                      // kan draws a replacement tile; winning on it is rinshan kaihou
+        if (draw(S, p) === null) return;
+        if (MJ.canWin(S.hands[p], S.melds[p].length)) {
+          if (isH(S, p)) { S.canTsumo = true; S.rinshanPending = true; }
+          else { win(S, p, 'tsumo', null, 'rinshan'); return; }
+        }
+      }
       S.phase = 'discard';
       advance(S);
       return;
@@ -3559,7 +3670,7 @@ Rack: middle</pre>` },
   function humanTsumo(S, seat) {
     if (seat === undefined) seat = S.humans[0];
     if (!S.canTsumo || S.over || S.turn !== seat) return false;
-    win(S, seat, 'tsumo', null);
+    win(S, seat, 'tsumo', null, S.rinshanPending ? 'rinshan' : undefined);
     return true;
   }
 
