@@ -2865,7 +2865,7 @@ Rack: middle</pre>` },
       var swing = ease(T / 4);                                  // rotate into three-point perspective over 4 seconds
       cam2.position.lerpVectors(camStart, camEnd, swing);
       // pointer near the bottom of the page zooms in on your tiles
-      zoomLerp += ((pointerLow && GM.playedFirst ? 1 : 0) - zoomLerp) * 0.06;   // the camera only moves in once you have played a card
+      zoomLerp += ((pointerLow && GM.G && GM.G.turn === 0 && GM.G.phase === 'discard' && !GM.G.over ? 1 : 0) - zoomLerp) * 0.06;   // zooms in toward your tiles on your turn   // the camera only moves in once you have played a card
       cam2.position.lerp(new THREE.Vector3(0, 3.4, 7.4), zoomLerp * 0.85);
       // whose turn it is: the camera turns a little toward the left or right player; the opposite player keeps the view centred
       // your turn: look at your own pieces; another player's turn: pan up and look straight at that person
