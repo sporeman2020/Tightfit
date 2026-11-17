@@ -2549,7 +2549,7 @@ Rack: middle</pre>` },
       cellUV(fgeo, pi);
       // each coloured face has its own material, with the roughness, normal and hue values for its tile
       var cell = TILE_CELLS[pi % TILE_CELLS.length];
-      var pm = new THREE.MeshStandardMaterial({ map: jadeTex, color: new THREE.Color().setHSL(((tableHue + cell[6]) % 1 + 1) % 1, 0.85, 0.85), roughness: 0.75, metalness: 0 });   // brighter, matte, no normal or roughness maps
+      var pm = new THREE.MeshStandardMaterial({ map: jadeTex, color: new THREE.Color().setHSL(((tableHue + cell[6]) % 1 + 1) % 1, 0.85, 0.85), roughness: 0.9, metalness: 0 });   // matte: the malachite stays visible without the sheen
       var front = new THREE.Mesh(fgeo, pm);
       front.position.z = D / 2 - d1; g.add(front);
       // the white side carries the tile type, mirrored so it reads from the table side
