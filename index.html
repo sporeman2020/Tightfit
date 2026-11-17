@@ -2682,8 +2682,8 @@ Rack: middle</pre>` },
         pile.forEach(function (t, k) {
           var m = gameTile(t), g = DISC[seat], dc = k % 6, dr = Math.floor(k / 6);
           var lx = (dc - 2.5) * 0.648, lz = (dr - 1.5) * 0.612, yaw = g[2];
-          m.rotation.order = "YXZ"; m.rotation.set(-Math.PI / 2, yaw, 0);
-          m.position.set(g[0] + lx * Math.cos(yaw) + lz * Math.sin(yaw), 0.04, g[1] - lx * Math.sin(yaw) + lz * Math.cos(yaw));
+          m.rotation.order = "YXZ"; m.rotation.set(Math.PI / 2, yaw, 0);   // flipped so the type face points up
+          m.position.set(g[0] + lx * Math.cos(yaw) + lz * Math.sin(yaw), 0.12, g[1] - lx * Math.sin(yaw) + lz * Math.cos(yaw));
           tableGroup.add(m); GM.discardMeshes.push(m);
         });
       });
