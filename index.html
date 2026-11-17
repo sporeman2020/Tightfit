@@ -2667,9 +2667,9 @@ Rack: middle</pre>` },
     function setupWestWall() {
       tableGroup.children.forEach(function (c) {
         if (c.userData.side !== 'west') return;
-        if (c.userData.idx < 7) { c.position.z -= 0.25; c.position.x += 0.27; }   // the seven-stack section sits one tile over, toward the table
+        if (c.userData.idx >= 10) c.position.z += 0.18;   // the last seven stacks move half a tile toward the South wall (the East player's left)
         if (c.userData.idx === 3) c.rotation.x += Math.PI;   // the middle stack is the dora indicator, flipped face up
-        if (c.userData.idx === 7) c.rotation.y += Math.PI / 2;
+        if (c.userData.idx === 9) c.rotation.y += Math.PI / 2;   // the 8th stack from the South end: its top tile faces long
       });
     }
     var pointerLow = false, zoomLerp = 0, pointerHigh = false, topLerp = 0, pointerLeft = false, pointerRight = false;
