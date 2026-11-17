@@ -2839,7 +2839,7 @@ Rack: middle</pre>` },
       censorBoxes.forEach(function (b) { b.c.remove(); }); censorBoxes = [];
       [[1, 8, 1.6, 0.6], [2, 0, 1.6, -8.2], [3, -8, 1.6, 0.6]].forEach(function (sp) {
         var seat = sp[0], c = document.createElement("div");
-        c.style.cssText = "position:absolute;background:#000;color:#fff;font:16px MGPixel, monospace;padding:3px 8px;border:2px solid #000;pointer-events:none;white-space:nowrap;transform:translate(-50%,-50%);";
+        c.style.cssText = "position:absolute;background:#000;color:#fff;font:16px MGPixel, monospace;padding:4px 0;width:150px;text-align:center;border:0;pointer-events:none;white-space:nowrap;transform:translate(-50%,-50%);";
         c.textContent = WINDS[(seat - starter + 4) % 4];
         ov.appendChild(c);
         censorBoxes.push({ c: c, p: new THREE.Vector3(sp[1], sp[2], sp[3]) });
