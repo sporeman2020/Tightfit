@@ -2714,14 +2714,30 @@ Rack: middle</pre>` },
       });
       var names = ["You", "Right", "Center", "Left"];
       var callWait = S.phase === "call" && S.queue.length && S.queue[0].player === 0;
-      gameHud.textContent = S.over ? "Hand over" : callWait ? "Call possible: click here to pass" : (S.phase === "discard" && S.turn === 0 ? "Your turn: click a tile to discard" : "Waiting for " + names[S.turn]);
-      gameHud.style.pointerEvents = callWait ? "auto" : "none";
+      gameHud.innerHTML = "";
+      if (callWait) { gameCallButtons(S); gameHud.style.pointerEvents = "auto"; }
+      else { gameHud.textContent = S.over ? "Hand over" : (S.phase === "discard" && S.turn === 0 ? "Your turn: click a tile to discard" : "Waiting for " + names[S.turn]); gameHud.style.pointerEvents = "none"; }
+    }
+    function gameCallButtons(S) {
+      var opts = S.queue[0].opts;
+      function button(text, fn) {
+        var b = document.createElement("button");
+        b.type = "button"; b.textContent = text;
+        b.style.cssText = "display:block;margin:4px 0;font:14px MGPixel, monospace;background:#ede1e3;color:#2a0808;border:0;padding:4px 10px;cursor:pointer;";
+        b.addEventListener("click", function () { fn(); gameAfter(); });
+        gameHud.appendChild(b);
+      }
+      var head = document.createElement("div"); head.textContent = "Call available:"; gameHud.appendChild(head);
+      opts.forEach(function (o) {
+        if (o.type === "ron") button("Mahjong (ron)", function () { MJG.humanCall(S, o); });
+        else if (o.type === "pon") button("Pon", function () { MJG.humanCall(S, o); });
+        else if (o.type === "kan") button("Kan", function () { MJG.humanCall(S, o); });
+        else if (o.type === "chi") button("Chi " + o.seq.map(function (t) { return MJ.LABEL[t]; }).join(" "), function () { MJG.humanCall(S, o); });
+      });
+      button("Pass", function () { MJG.humanCall(S, null); });
     }
     function gameStart(starter) {
       GM.started = true;
-      gameHud.addEventListener("click", function () {
-        if (GM.G && GM.G.phase === "call" && GM.G.queue.length && GM.G.queue[0].player === 0) { MJG.humanCall(GM.G, null); gameAfter(); }
-      });
       dealt.forEach(function (d) { if (d.edge === "S" && !d.game) d.discarded = true; });   // the dealt hand gives way to the engine's hand
       GM.G = MJG.newGame({ human: 0, dealer: starter });
       gameRender();
