@@ -2741,6 +2741,14 @@ Rack: middle</pre>` },
       });
       button("Skip", function () { MJG.humanCall(S, null); });
     }
+    // Sort button at the bottom middle: orders your hand by tile type, ascending
+    var sortBtn = document.createElement("button");
+    sortBtn.type = "button"; sortBtn.textContent = "Sort";
+    sortBtn.style.cssText = "position:fixed;left:50%;transform:translateX(-50%);bottom:10px;z-index:3000;font:14px MGPixel, monospace;background:#ede1e3;color:#2a0808;border:0;padding:6px 14px;cursor:pointer;";
+    sortBtn.addEventListener("click", function () {
+      if (GM.G) { GM.G.hands[0].sort(function (x, y) { return x - y; }); gameRender(); }
+    });
+    document.body.appendChild(sortBtn);
     function gameStart(starter) {
       GM.started = true;
       dealt.forEach(function (d) { if (d.edge === "S" && !d.game) d.discarded = true; });   // the dealt hand gives way to the engine's hand
