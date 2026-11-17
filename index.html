@@ -2516,7 +2516,7 @@ Rack: middle</pre>` },
     var tileSheet = new THREE.TextureLoader().load('assets/tile_types_cards.png');   // 7 by 5 grid of the 34 type labels
     var typeMats = TYPE_LABELS.map(function (lab) {
       // the sheet holds only the type text (transparent around it), so the white face shows through
-      return new THREE.MeshStandardMaterial({ map: tileSheet, color: 0xf4ecd8, transparent: true, alphaTest: 0.5, normalMap: tileNormal, normalScale: new THREE.Vector2(0.3, 0.3), roughnessMap: tileRough, roughness: 0.6, metalness: 0 });
+      return new THREE.MeshStandardMaterial({ map: tileSheet, color: 0xf4ecd8, transparent: true, alphaTest: 0.5, roughness: 0.6, metalness: 0 });
     });
     // maps the front face so the whole face shows the type (uv 0..1 across the tile)
     // maps the white face onto this type's cell in the sheet (mirrored, so it reads from the table side)
@@ -2588,9 +2588,9 @@ Rack: middle</pre>` },
     var discardSlotMat = new THREE.LineBasicMaterial({ color: 0x0b2a18 });
     function discardGrid(cx, cz, yaw) {
       var g = new THREE.Group(); g.position.set(cx, 0.03, cz); g.rotation.y = yaw;
-      for (var dc = 0; dc < 4; dc++) for (var dr = 0; dr < 6; dr++) {
-        var slot = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(0.6, 0.45)), discardSlotMat);
-        slot.rotation.x = -Math.PI / 2; slot.position.set((dc - 1.5) * 0.675, 0, (dr - 2.5) * 0.5);
+      for (var dc = 0; dc < 6; dc++) for (var dr = 0; dr < 4; dr++) {
+        var slot = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.PlaneGeometry(0.648, 0.612)), discardSlotMat);
+        slot.rotation.x = -Math.PI / 2; slot.position.set((dc - 2.5) * 0.648, 0, (dr - 1.5) * 0.612);
         g.add(slot);
       }
       tableGroup.add(g);
@@ -2680,8 +2680,8 @@ Rack: middle</pre>` },
       });
       S.discards.forEach(function (pile, seat) {
         pile.forEach(function (t, k) {
-          var m = gameTile(t), g = DISC[seat], dc = k % 4, dr = Math.floor(k / 4);
-          var lx = (dc - 1.5) * 0.675, lz = (dr - 2.5) * 0.5, yaw = g[2];
+          var m = gameTile(t), g = DISC[seat], dc = k % 6, dr = Math.floor(k / 6);
+          var lx = (dc - 2.5) * 0.648, lz = (dr - 1.5) * 0.612, yaw = g[2];
           m.rotation.order = "YXZ"; m.rotation.set(-Math.PI / 2, yaw, 0);
           m.position.set(g[0] + lx * Math.cos(yaw) + lz * Math.sin(yaw), 0.04, g[1] - lx * Math.sin(yaw) + lz * Math.cos(yaw));
           tableGroup.add(m); GM.discardMeshes.push(m);
