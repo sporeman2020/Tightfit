@@ -3060,7 +3060,9 @@ Rack: middle</pre>` },
       last: null, canTsumo: false, rand: rand
     };
     // deal 13 each, then the dealer draws the 14th
-    for (var k = 0; k < 13; k++) for (var s = 0; s < 4; s++) S.hands[s].push(S.wall.pop());
+    var order = [0, 1, 2, 3].map(function (i) { return (dealer + i) % 4; });   // East first, then clockwise
+    for (var r = 0; r < 3; r++) order.forEach(function (sp) { for (var j = 0; j < 4; j++) S.hands[sp].push(S.wall.pop()); });   // four at a time, three rounds
+    order.forEach(function (sp) { S.hands[sp].push(S.wall.pop()); });   // the 13th tile each, then East's extra tile below
     startTurn(S);
     advance(S);
     return S;
