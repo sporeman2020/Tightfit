@@ -3287,8 +3287,6 @@ Rack: middle</pre>` },
     }
     function gameDiscard(d) {
       var S = GM.G;
-      // a call is waiting on you: clicking a tile in your hand passes on the call (there is no pass button)
-      if (S && d && d.game && !S.over && S.phase === 'call' && S.queue.length && S.queue[0].player === 0) { actCall(null); gameAfter(); return true; }
       if (!S || !d || !d.game || S.over || S.phase !== "discard" || S.turn !== 0) return false;
       if (GM.riichiMode) {   // riichi: the chosen tile is the discard that declares it, and only if you are waiting after it
         GM.riichiMode = false;
