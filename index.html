@@ -2114,6 +2114,7 @@ Rack: middle</pre>` },
       th = i * 1.07 + 0.3; var rs = 0.78 + 0.34 * ((i * 7) % 5) / 4; slab(spearG, new V3(Math.cos(th) * rs, Math.sin(th) * rs, 0.9), new V3(Math.sin(th) * 0.45, -Math.cos(th) * 0.45, -0.85), r2() * 6.28, r2() < 0.5);
     }    var diskG = new THREE.Group(), diskA = new THREE.Group(), diskB = new THREE.Group();                // two flat rigs, tilted a little toward you so they read as thin discs
     diskG.rotation.x = 0.07; diskG.add(diskA, diskB); hed.add(diskG);
+    diskA.visible = false;   // the inner disk ring (the core rig) is off; the outer rig stays
     function slabRing(parent, count, R, phase) {
       for (var q = 0; q < count; q++) { var an = (q + phase) / count * Math.PI * 2; slab(parent, new V3(Math.cos(an) * R, (r2() - 0.5) * 0.04, Math.sin(an) * R), new V3(-Math.sin(an), 0, Math.cos(an)), r2() * 6.28, r2() < 0.5); }
     }
@@ -2134,8 +2135,10 @@ Rack: middle</pre>` },
       hed.lookAt(cam.position);                                                                  // it faces you; the whole never travels, only its parts move
       var tx = ptr ? ptr.x : Math.sin(T * 0.7) * 0.35, ty = ptr ? ptr.y : Math.sin(T * 0.53 + 1) * 0.25;
       gaze.x += (tx - gaze.x) * 0.05; gaze.y += (ty - gaze.y) * 0.05; hed.rotateY(gaze.x * 0.12); hed.rotateX(-gaze.y * 0.1);
-      irisG.rotation.z = T * 0.18; lidG.rotation.z = Math.sin(T * 0.4) * 0.05; shellG.rotation.set(Math.sin(T * 0.3) * 0.05, Math.cos(T * 0.25) * 0.05, -T * 0.04); spearG.rotation.z = Math.sin(T * 0.6) * 0.14; diskA.rotation.y = T * 0.22; diskB.rotation.y = -T * 0.1;
+      irisG.rotation.z = T * 0.18; lidG.rotation.z = Math.sin(T * 0.4) * 0.05; shellG.rotation.set(Math.sin(T * 0.3) * 0.05, Math.cos(T * 0.25) * 0.05, -T * 0.04); spearG.rotation.z = Math.sin(T * 0.6) * 0.14; diskA.rotation.y = T * 0.22;
       var ringK = sm((440 - cam.position.distanceTo(hed.position)) / 380);                       // as you walk in, the outermost ring stands up on end: its top and bottom reach the highest and lowest points, so the hedron reads taller and bigger
+      // disk B only turns once you are close enough (ringK is 0 far away, 1 close), so its spin builds up as you approach
+      diskB.userData.spin = (diskB.userData.spin || 0) + ringK * 0.01; diskB.rotation.y = -diskB.userData.spin;
       diskB.rotation.x = ringK * (Math.PI / 2); diskB.scale.setScalar(1 + 0.3 * ringK);
       sun.position.copy(hed.position).add(new V3(-120, 120, 140)); sun.target.position.copy(hed.position); sun.target.updateMatrixWorld();      // one light from the left, low and hard
       sun.intensity = 2.6 * hs; hemi2.intensity = 0.2; glow.material.opacity = (0.85 + 0.12 * Math.sin(T * 1.3)) * hs; ringL.material.opacity = (0.96 + 0.04 * Math.sin(T * 2.1)) * hs; ringL.rotation.z = Math.sin(T * 0.3) * 0.03;
@@ -2230,7 +2233,7 @@ Rack: middle</pre>` },
   function miniStep(m, ph, R, size, phase, g, boost, gl, gs, st) {                                       // radius runs +R -> 0 -> -R: it collapses through its centre and comes out inside-out, mirrored
     var e = Math.cos(ph * 0.8 + phase), ae = Math.abs(e), sg = e < 0 ? -1 : 1, k, d, w, al, h1, h2;
     for (k = 0; k < m.N; k++) {
-      d = m.dirs[k]; mQt.setFromAxisAngle(Y_AX, (1 - ae) * 3.2 * d.y + ph * 0.15);                         // it twists as it folds
+      d = m.dirs[k]; mQt.setFromAxisAngle(Y_AX, 0);   // no twist: the interior keeps its shape while it folds                         // it twists as it folds
       al = g ? sg * (d.x * g.x + d.y * g.y + d.z * g.z) : 0;
       w = g ? 1 + boost * Math.pow(Math.max(0, al), 5) : 1;                                              // the pieces on the side you are looking toward swell, as if they were looking back
       if (st > 0 && g) { if (al > 0.9) w *= 1 - st; else if (al > 0.7) w *= 1 + 0.8 * st; }              // when it stares: a pupil opens where you are looking, ringed by a thicker iris
@@ -2247,7 +2250,53 @@ Rack: middle</pre>` },
   // The finale. If you keep your view fixed on one spot for too long, the pieces around you gather there into an eye, which then builds itself into the
   // Tightfit lattice (it flattens and turns the lattice's maroon), goes grainy and fainter, blends into the page, and is gone. You are back on Tightfit.
   var EYE_W = 7.5, EYE_H = 4.0;
+  // the desktop instead of the eye: two windows and a taskbar, each drawn as an outline by the slabs along its edges
+  // the finale: a loose, misjudged attempt at a second hedron, built by something that does not understand one.
+  // Points on a sphere, flattened, with lumps, uneven spacing and random angles. Off-centre and not quite round.
+  var DESK_ON = false, CRUDE_ON = true;
+  // the finale: one continuous flowing line, an error trying to consume more of the hedron, looping and folding back on itself
+  // inside it. The slabs run along the line in order and the whole line flows over time; a few pieces glitch to new spots.
+  function crudeTarget(k, N) {
+    var now = performance.now() / 1000, t = (k + 0.5) / N, flow = now * 0.5;
+    function pt(tt) {
+      var u = tt * Math.PI * 2 * 3 + flow;                                                // three loops around
+      var x = (3.4 + 2.2 * Math.sin(u * 0.5 + tt * 3)) * Math.cos(u) + 0.9 * Math.sin(u * 2.1);   // folds in and out
+      var y = 2.8 * Math.sin(u * 1.3 + tt * 2) + 0.7 * Math.cos(u * 0.37);
+      return [x, y];
+    }
+    var p = pt(t), q = pt(t + 0.002);
+    var dx = q[0] - p[0], dy = q[1] - p[1], L = Math.hypot(dx, dy) || 1;
+    var px = p[0], py = p[1], tx = dx / L, ty = dy / L;
+    // glitch: every quarter second a few pieces jump to a new place
+    var slot = Math.floor(now * 4), gl = Math.abs(Math.sin((k + 1) * (slot + 1) * 12.9898) * 43758.5453) % 1;
+    if (gl > 0.88) { px += (gl - 0.94) * 12; py += Math.sin(slot * 3.1 + k) * 2; }
+    return [px, py, tx, ty];
+  }
+  var DESK = [
+    { x0: -6.2, x1: 0.6, y0: -0.8, y1: 3.8 },   // window 1
+    { x0: -1.6, x1: 6.2, y0: -3.0, y1: 1.2 },   // window 2
+    { x0: -7.4, x1: 7.4, y0: -3.8, y1: -2.9 }   // taskbar
+  ];
+  function deskTarget(k, N) {
+    var edges = [], total = 0;
+    DESK.forEach(function (r) {
+      var segs = [[r.x0, r.y0, r.x1, r.y0], [r.x1, r.y0, r.x1, r.y1], [r.x1, r.y1, r.x0, r.y1], [r.x0, r.y1, r.x0, r.y0]];
+      segs.forEach(function (s) { var L = Math.hypot(s[2] - s[0], s[3] - s[1]); edges.push({ s: s, L: L }); total += L; });
+    });
+    var d = (k + 0.5) / N * total, acc = 0;
+    for (var i = 0; i < edges.length; i++) {
+      var e = edges[i];
+      if (acc + e.L >= d || i === edges.length - 1) {
+        var u = Math.min(1, (d - acc) / e.L), s = e.s, tl = e.L || 1;
+        return [s[0] + (s[2] - s[0]) * u, s[1] + (s[3] - s[1]) * u, (s[2] - s[0]) / tl, (s[3] - s[1]) / tl];
+      }
+      acc += e.L;
+    }
+    return [0, 0, 1, 0];
+  }
   function eyeTarget(k, N) {                                                                              // slab k's place in the eye: [x, y, tangent x, tangent y] on a flat plane facing you
+    if (CRUDE_ON) return crudeTarget(k, N);
+    if (DESK_ON) return deskTarget(k, N);
     var nL = Math.floor(N * 0.34), nI = Math.floor(N * 0.26), nJ = Math.floor(N * 0.14), i, u, x, y, dydx, th, r, tl;
     if (k < nL) {                                                                                         // the lids: an upper arc and a flatter lower one
       i = k % (nL >> 1); u = i / (nL >> 1); x = -EYE_W + 2 * EYE_W * u; var up = k < (nL >> 1), hh = up ? EYE_H : -0.75 * EYE_H;
@@ -2348,6 +2397,9 @@ Rack: middle</pre>` },
     kGw.copy(kal.fw).applyQuaternion(kQa).applyQuaternion(kQb);
     kal.front.g.position.copy(kal.camPos).addScaledVector(kGw, 7 - 2.6 * near + 3 * kal.rc);             // it creeps closer the longer you hold still
     if (kal.gl > 0) kal.front.g.position.add(kGf.set(Math.sin(kal.gs * 1.7), Math.sin(kal.gs * 2.9), Math.sin(kal.gs * 4.3)).multiplyScalar(0.45 * kal.gl));
+    // nothing sits on the camera: the small shell is pushed out to at least 6 units from it
+    var fromCam = kal.front.g.position.clone().sub(kal.camPos);
+    if (fromCam.length() < 6) kal.front.g.position.copy(kal.camPos).add(fromCam.setLength(6));
     miniStep(kal.front, kal.ph, 2.6 * gi, 1.0, 0, null, 0, kal.gl, kal.gs, 0); kal.front.g.rotation.y = kal.ph * 0.25 * (1 - lock);
     kGw.copy(kGc).applyAxisAngle(Y_AX, -kal.around.g.rotation.y);
     miniStep(kal.around, kal.ph, 16 * gi * (1 - 0.22 * near + 0.12 * kal.act), 3.0, 1.9, kGw, 0.7, kal.gl * 0.5, kal.gs + 5, kal.st); kal.around.g.rotation.y = -kal.ph * 0.1;     // the big one closes in while you are still, opens out when you move, and opens a pupil where you look when it stares
@@ -2396,7 +2448,7 @@ Rack: middle</pre>` },
     var vp = sm((T - 45) / 90);
     if (!pst.final && T > 45) { voidSphere.visible = true; voidSphere.position.copy(hed.position); voidSphere.scale.setScalar(Math.max(0.001, 470 * vp)); setBoard("BOARD: Intrusion/Invasion/Invalid Occupant"); }
     if (kal.on) { kaleidoStep(dt); cam.position.copy(kal.camPos); lookFree(pst.hedWorld); voidSphere.visible = false; sPrompt.style.display = "none"; return; }
-    if (pst.final) { voidSphere.visible = false; sPrompt.style.display = "none"; if (!tunnelOn) startTunnel(); tunnelStep(T); cam.position.copy(tunnelC); lookFree(new V3(tunnelC.x, tunnelC.y, tunnelC.z - 1)); return; }
+    if (pst.final) { voidSphere.visible = false; sPrompt.style.display = "none"; if (!tunnelOn) startTunnel(); tunnelStep(T); cam.position.copy(tunnelC).add(new V3(0, 0, -4.5)); lookFree(new V3(tunnelC.x, tunnelC.y, tunnelC.z)); return; }   // outside the core sphere (radius 3), so nothing covers the camera
     if (T < 14 || !boardReady) return;   // the figure only starts once the first board message is written
     if (!pst.on) { pst.on = true; person.visible = true; pst.x = 0; pst.y = 0; pst.vy = 0; pst.z = 22; pst.hedWorld.copy(hed.position); }
     var fwd = 0, back = (keysDown.ArrowDown || keysDown.s) ? 1 : 0;   // W is disabled for now
@@ -2417,7 +2469,7 @@ Rack: middle</pre>` },
     cam.position.set(pst.x, pst.y + 2.6, pst.z + 4.2);
     // the look target moves from the figure toward the hedron as the figure rises
     cam.lookAt(hw.x, pst.y + 1.3, hw.z + 65);   // look straight ahead at the ring
-    if (!holdingS && !kal.done && cam.position.distanceTo(pst.hedWorld) < 30) { kal.on = true; kal.t = 0; kal.next = 2; kal.glitches = 0; kal.glitchFrames = 0; kal.camPos = cam.position.clone(); }
+    if (!holdingS && !kal.done && cam.position.distanceTo(pst.hedWorld) < 30) { kal.on = true; kal.t = 0; kal.next = 2; kal.glitches = 0; kal.glitchFrames = 0; kal.camPos = cam.position.clone().add(cam.position.clone().sub(pst.hedWorld).normalize().multiplyScalar(8)); }   // pulled back 8 units away from the hedron so the view stays clear of it
     sPrompt.style.display = "flex";
     sPrompt.style.opacity = holdingS ? "1" : String((0.5 + 0.5 * Math.sin(T * 7)).toFixed(2));
     sPrompt.style.borderWidth = holdingS ? "3px" : "2px";
@@ -2623,7 +2675,7 @@ Rack: middle</pre>` },
     var chain = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 8, 6), new THREE.MeshStandardMaterial({ color: 0x2a2218, roughness: 0.5 })); chain.position.set(0, 12.2, 0); sc2.add(chain);
     var lampLight = new THREE.PointLight(0x3cc98a, 1.5, 22); lampLight.position.set(0, 7.9, 0); sc2.add(lampLight);    var RW = 15, RFLOOR = -7.5, RTOP = 12, RRAIL = -1.4;
     // the room walls: a dark red purple, with a faint glow so they show a little in the dim room
-    var eggshell = new THREE.MeshStandardMaterial({ color: 0x5e1d44, emissive: 0x2a0a1e, emissiveIntensity: 0.8, roughness: 0.62, metalness: 0, side: THREE.DoubleSide });
+    var eggshell = new THREE.MeshStandardMaterial({ color: 0x3a1228, emissive: 0x1c0816, emissiveIntensity: 0.8, roughness: 0.62, metalness: 0, side: THREE.DoubleSide });
     var wainscot = new THREE.MeshStandardMaterial({ color: 0x3a2414, roughness: 0.5, metalness: 0, side: THREE.DoubleSide });
     var trim = new THREE.MeshStandardMaterial({ color: 0x2a1809, roughness: 0.45, metalness: 0 });
     // herringbone wood floor: short planks laid at alternating 45-degree angles
@@ -2650,6 +2702,7 @@ Rack: middle</pre>` },
     }
     // the two side walls of the room
     var numberWall = roomSide(-RW, 0, Math.PI / 2); roomSide(RW, 0, -Math.PI / 2);
+    roomSide(0, -RW, 0); roomSide(0, RW, Math.PI);   // the north and south walls
     // a small label with the number 6241, in the top corner of the left wall (a dark box with a light border)
     (function () {
       var tc = document.createElement("canvas"); tc.width = 256; tc.height = 96;
@@ -2907,7 +2960,7 @@ Rack: middle</pre>` },
     var HAND_STEP = 0.345;                                // distance between tile centres (a tile is 0.324 wide)
     function handRect() {                                // the strip of the screen the hand is drawn in (CSS pixels, measured from the top-left)
       var W = rend.domElement.clientWidth, H = rend.domElement.clientHeight;
-      var hh = Math.round(Math.min(270, H * 0.32)), vw = Math.round(Math.min(W * 0.74, 1380)), bottom = Math.round(Math.max(72, H * 0.13));
+      var hh = Math.round(Math.min(270, H * 0.32)), vw = Math.round(Math.min(W * 0.74, 1380)), bottom = 74;   // just above the Sort button
       return { x: Math.round((W - vw) / 2), w: vw, h: hh, bottom: bottom, top: H - bottom - hh, W: W, H: H };
     }
     function handClear() {
@@ -2924,7 +2977,7 @@ Rack: middle</pre>` },
       handClear();
       hand.forEach(function (t, i) {
         var g = gameTile(t);                             // the same tile the table uses: malachite back, white face with its type
-        g.rotation.order = "YXZ"; g.rotation.set(0, Math.PI, 0);   // standing up, face toward you
+        g.rotation.order = "YXZ"; g.rotation.set(0, 0, 0);   // standing up, the type face toward you
         g.userData.handIdx = i;
         var o = { g: g, tile: t, i: i, x: 0, y: 0, s: 1, flip: i === flipIdx ? 0 : 1, base: g.scale.clone() };
         o.x = (i - (n - 1) / 2) * HAND_STEP;
@@ -2946,8 +2999,12 @@ Rack: middle</pre>` },
     }
     rend.domElement.addEventListener("pointermove", function (e) { if (e.pointerType === "mouse") { handHover = handPick(e); rend.domElement.style.cursor = handHover >= 0 ? "pointer" : ""; } });
     rend.domElement.addEventListener("pointerleave", function () { handHover = -1; rend.domElement.style.cursor = ""; });
-    rend.domElement.addEventListener("click", function (e) {
-      var i = handPick(e); if (i < 0 || !GM.G || !GM.G.hands[0]) return;
+    // a discard is a press and a release on the same hand tile, both on the canvas (a click that starts elsewhere never discards)
+    var handPress = -1;
+    rend.domElement.addEventListener("pointerdown", function (e) { handPress = e.button === 0 ? handPick(e) : -1; });
+    rend.domElement.addEventListener("pointerup", function (e) {
+      var i = handPick(e), same = handPress >= 0 && i === handPress; handPress = -1;
+      if (!same || !GM.G || !GM.G.hands[0]) return;
       gameDiscard({ game: true, tile: GM.G.hands[0][i] });
     });
     function drawHand() {                                // the second pass: your hand on top of the table, in its own strip and camera
@@ -2956,7 +3013,7 @@ Rack: middle</pre>` },
       var hr = handRect(), n = handTiles.length, rowW = (n - 1) * HAND_STEP + 0.324;
       handCam.aspect = hr.w / hr.h; handCam.updateProjectionMatrix();
       var dist = Math.max(2.6, rowW * 0.64);             // far enough to hold the whole row, as large as it will go
-      handCam.position.set(dist * 0.2, dist * 0.36, dist * 0.92); handCam.lookAt(0, 0.04, 0);   // a little right of, above and in front of the row: the top and the right side of each tile show, and every vertical leans (three-point)
+      handCam.position.set(0, dist * 0.36, dist * 0.92); handCam.lookAt(0, 0.04, 0);   // straight on, a little above: the tops show, and the tiles on each side show their inner sides (no slant)
       handTiles.forEach(function (o, i) {
         var d = i - handHover, up = i === handHover, shift = handHover < 0 || up ? 0 : (d < 0 ? -1 : 1) * (Math.abs(d) === 1 ? 0.07 : Math.abs(d) === 2 ? 0.028 : 0);
         var tx = (i - (n - 1) / 2) * HAND_STEP + shift, ty = up ? 0.07 : 0, ts = up ? 1.2 : 1, k = Math.min(1, dt * 16);
@@ -2971,6 +3028,14 @@ Rack: middle</pre>` },
       rend.setViewport(hr.x, hr.bottom, hr.w, hr.h); rend.setScissor(hr.x, hr.bottom, hr.w, hr.h);
       rend.render(handScene, handCam);
       rend.setScissorTest(false); rend.setViewport(0, 0, hr.W, hr.H); rend.autoClear = true;
+      // the name of the tile under the pointer, in the black box just above it
+      if (handHover >= 0 && handTiles[handHover]) {
+        var hp = handTiles[handHover].g.position.clone(); hp.y += 0.45; hp.project(handCam);
+        tileLabel.textContent = tileName(handTiles[handHover].tile);
+        tileLabel.style.left = (hr.x + (hp.x + 1) / 2 * hr.w) + 'px';
+        tileLabel.style.top = (hr.top + (1 - hp.y) / 2 * hr.h) + 'px';
+        tileLabel.style.display = 'block';
+      }
     }
     function gameTile(t) {
       var g = makePiece();
@@ -2980,7 +3045,8 @@ Rack: middle</pre>` },
       // your hand shows the style sheet on the face you see (the front), not the jade back
       var fgeo = new THREE.ExtrudeGeometry(pieceRound(0.5, 0.7, 0.06), { depth: 0.34 * 2 / 3, bevelEnabled: false, curveSegments: 3 });
       typeUV(fgeo, t);
-      g.children[0].geometry = fgeo; g.children[0].material = typeMats[t];
+      // the decal is on the front face only (extrude group 0); the sides of the front third stay plain white (group 1)
+      g.children[0].geometry = fgeo; g.children[0].material = [typeMats[t], pieceWhite];
       g.scale.set(0.648, 0.612, 0.612);
       return g;
     }
@@ -3280,15 +3346,13 @@ Rack: middle</pre>` },
       if (NET.editing) return;
       var el = netEnsureLobbyEl(); el.innerHTML = ""; el.style.display = "block";
       var head = document.createElement("div"); head.textContent = "Room " + NET.room + "  ·  " + status; head.style.cssText = "margin-bottom:10px;color:#d9c3a0;"; el.appendChild(head);
-      var seatNames = ["You (South)", "Right (East)", "Center (North)", "Left (West)"];
       slots.forEach(function (sl) {
         var row = document.createElement("div"); row.style.cssText = "display:flex;align-items:center;gap:10px;margin:6px 0;";
         var dot = document.createElement("span"); dot.style.cssText = "display:inline-block;width:16px;height:16px;flex:0 0 16px;background:" + (sl.live ? "#2e9e3e" : "#c62828") + ";";
         var nm = document.createElement("span"); nm.style.cssText = "min-width:150px;";
         nm.textContent = sl.live ? sl.name : "empty";
         if (sl.live && sl.seat === NET.mySeat) { nm.style.cssText += "text-decoration:underline dotted;cursor:text;"; nm.title = "Click to change your name"; nm.addEventListener("click", function () { netEditName(nm, sl.name); }); }
-        var lbl = document.createElement("span"); lbl.textContent = seatNames[sl.seat]; lbl.style.cssText = "font-size:12px;color:#9a8a7a;";
-        row.appendChild(dot); row.appendChild(nm); row.appendChild(lbl); el.appendChild(row);
+        row.appendChild(dot); row.appendChild(nm); el.appendChild(row);
       });
     }
     function netEditName(nm, current) {
@@ -3396,6 +3460,7 @@ Rack: middle</pre>` },
     function gameStart(starter) {
       if (NET.role === 'client') return;   // a joining player is shown the host's game
       GM.started = true;
+      setupWinds();   // the wind labels appear when the round starts, not before
       dealt.forEach(function (d) { if (d.edge === "S" && !d.game) d.discarded = true; });   // the dealt hand gives way to the engine's hand
       // one shuffle: the engine plays the tiles the table shows, in the same order they are drawn from the wall
       var wallEdgeOrder = ["S", "E", "N", "W"], wallTypes = [];
@@ -3480,13 +3545,8 @@ Rack: middle</pre>` },
       var start = downAt; downAt = null;
       if (!start || !hoverD || southSlot >= 24) return;
       if (Math.hypot(e.clientX - start[0], e.clientY - start[1]) > 6) return;   // a drag, not a click
-      if (gameDiscard(hoverD)) { hoverD = null; return; }
-      var d = hoverD, k = southSlot++;
-      d.discarded = true; d.m.visible = false; d.hov = 0; hoverD = null;
-      var dm = d.m.clone();
-      dm.scale.copy(d.base); dm.rotation.set(-Math.PI / 2, 0, 0);
-      dm.position.set(-1.9 + ((k % 4) - 1.5) * 0.675, 0.04, 2.2 + (Math.floor(k / 4) - 2.5) * 0.5);
-      tableGroup.add(dm);
+      // discards only go through the game: if it is not your turn, nothing moves
+      gameDiscard(hoverD); hoverD = null;
     });
     // only your own hand (the South row) reacts to the pointer
     var ray = new THREE.Raycaster(), ndc = new THREE.Vector2();
@@ -3517,14 +3577,14 @@ Rack: middle</pre>` },
         panel.appendChild(row);
       }
       censorBoxes.forEach(function (b) { b.c.remove(); }); censorBoxes = [];
-      [[1, 8, 1.6, 0.6], [2, 0, 1.6, -8.2], [3, -8, 1.6, 0.6]].forEach(function (sp) {
+      [[1, 8, 1.9, 0.6], [2, 0, 1.9, -8.2], [3, -8, 1.9, 0.6]].forEach(function (sp) {
         var seat = sp[0], c = document.createElement("div");
         c.style.cssText = "position:absolute;background:#000;color:#fff;font:16px MGPixel, monospace;padding:4px 0;width:150px;text-align:center;border:0;pointer-events:none;white-space:nowrap;transform:translate(-50%,-50%);";
         c.textContent = WINDS[(seat - starter + 4) % 4];
         ov.appendChild(c);
         // the player's name sits above the wind, with a green box beside it; it shows only when someone holds that seat
         var nameEl = document.createElement("div");
-        nameEl.style.cssText = "position:absolute;bottom:100%;left:50%;transform:translateX(-50%);margin-bottom:4px;display:none;align-items:center;gap:6px;white-space:nowrap;background:rgba(0,0,0,.6);color:#fff;padding:2px 6px;font:13px MGPixel, monospace;pointer-events:none;";
+        nameEl.style.cssText = "position:absolute;top:2px;left:50%;transform:translateX(-50%);display:none;align-items:center;gap:6px;white-space:nowrap;background:rgba(0,0,0,.6);color:#fff;padding:2px 6px;font:13px MGPixel, monospace;pointer-events:none;";
         var greenBox = document.createElement("span"); greenBox.style.cssText = "display:inline-block;width:10px;height:10px;background:#2e9e3e;";
         var nameTxt = document.createElement("span");
         nameEl.appendChild(greenBox); nameEl.appendChild(nameTxt);
@@ -3550,6 +3610,7 @@ Rack: middle</pre>` },
         var nm = map[b.seat];
         b.nameTxt.textContent = nm || "";
         b.nameEl.style.display = nm ? "flex" : "none";
+        b.c.style.paddingTop = nm ? "20px" : "0px";
       });
     }
     function remapDeal(dealer) {
@@ -3575,7 +3636,7 @@ Rack: middle</pre>` },
         var at = Math.min(1, T / 4), eo = 1 - Math.pow(1 - at, 3);
         var dd = startSeats[starter], thetaT = Math.atan2(-dd[1], dd[0]);
         arrowGroup.rotation.y = (thetaT + 12 * Math.PI) * eo;
-        if (at >= 1) { arrowDone = true; startLbl.textContent = startNames[starter] + (starter === 0 ? ' are' : ' is') + ' East'; startLbl.style.opacity = '1'; setTimeout(function () { startLbl.style.opacity = '0'; }, 2500); setupWinds(); remapDeal(starter); assignDealOrder(starter); }
+        if (at >= 1) { arrowDone = true; startLbl.textContent = startNames[starter] + (starter === 0 ? ' are' : ' is') + ' East'; startLbl.style.opacity = '1'; setTimeout(function () { startLbl.style.opacity = '0'; }, 2500); remapDeal(starter); assignDealOrder(starter); }
       }
       if (arrowDone && T > 4.5) { if (!westSet && T > 8) { westSet = true; setupEastWall(starter); } // after the four players' initial tiles are drawn
       tableGroup.visible = true; }
@@ -3615,7 +3676,7 @@ Rack: middle</pre>` },
         tileLabel.style.left = ((lp.x + 1) / 2 * ov.clientWidth) + 'px';
         tileLabel.style.top = ((1 - lp.y) / 2 * ov.clientHeight) + 'px';
         tileLabel.style.display = 'block';
-      } else tileLabel.style.display = 'none';
+      } else if (handHover < 0) tileLabel.style.display = 'none';
       var swing = ease(T / 4);                                  // rotate into three-point perspective over 4 seconds
       cam2.position.lerpVectors(camStart, camEnd, swing);
       // the pointer's height on the page picks the view: low on the screen the camera lowers toward your own seat,
@@ -3628,7 +3689,7 @@ Rack: middle</pre>` },
       idleLerp += ((pointerOn ? 0 : 1) - idleLerp) * 0.03;
       cam2.position.lerp(new THREE.Vector3(0, 8.5, 5.5), idleLerp * 0.7);
       cam2.position.lerp(new THREE.Vector3(0, 3.4, 7.4), zoomLerp * 0.85);   // low, close to your seat
-      cam2.position.lerp(new THREE.Vector3(0, 11, 0.01), topLerp);           // straight down (the tiny z keeps the view from flipping)
+      cam2.position.lerp(new THREE.Vector3(0, 7, 0.01), topLerp);           // straight down (the tiny z keeps the view from flipping)
       // whose turn it is: the camera turns a little toward the left or right player; the opposite player keeps the view centred
       // your turn: look at your own pieces; another player's turn: pan up and look straight at that person
       var seat = GM.G ? ["player", "right", "middle", "left"][GM.G.turn] : "player";   // the camera follows whose turn it is, not a timer
