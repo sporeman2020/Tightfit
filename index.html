@@ -2765,6 +2765,14 @@ Rack: middle</pre>` },
       for (var k = 0; k < uv.count; k++) uv.setXY(k, u0 + (1 - (uv.getX(k) + 0.25) / 0.5) * uw, v0 + (uv.getY(k) + 0.35) / 0.7 * vh);
       uv.needsUpdate = true;
     }
+    // the front face, read from the side it is seen from (+z): not mirrored
+    function typeUVFront(geo, t) {
+      var c = t % 7, r = Math.floor(t / 7), uw = 1 / 7, vh = 1 / 5;
+      var u0 = c * uw, v0 = 1 - (r + 1) * vh;
+      var uv = geo.attributes.uv;
+      for (var k = 0; k < uv.count; k++) uv.setXY(k, u0 + (uv.getX(k) + 0.25) / 0.5 * uw, v0 + (uv.getY(k) + 0.35) / 0.7 * vh);
+      uv.needsUpdate = true;
+    }
     function faceUV(geo, mirror) {
       var uv = geo.attributes.uv;
       for (var k = 0; k < uv.count; k++) { var u = (uv.getX(k) + 0.25) / 0.5; uv.setXY(k, mirror ? 1 - u : u, (uv.getY(k) + 0.35) / 0.7); }
@@ -3044,7 +3052,7 @@ Rack: middle</pre>` },
       g.children[1].geometry = bgeo; g.children[1].material = jadeMat;
       // your hand shows the style sheet on the face you see (the front), not the jade back
       var fgeo = new THREE.ExtrudeGeometry(pieceRound(0.5, 0.7, 0.06), { depth: 0.34 * 2 / 3, bevelEnabled: false, curveSegments: 3 });
-      typeUV(fgeo, t);
+      typeUVFront(fgeo, t);
       // the decal is on the front face only (extrude group 0); the sides of the front third stay plain white (group 1)
       g.children[0].geometry = fgeo; g.children[0].material = [typeMats[t], pieceWhite];
       g.scale.set(0.648, 0.612, 0.612);
@@ -3096,7 +3104,7 @@ Rack: middle</pre>` },
           if (seat !== 0 && k >= (GM.shown && GM.shown[seat] !== undefined ? GM.shown[seat] : 0)) return;   // a bot's tile waits its turn to be put down
           var m = gameTile(t), g = DISC[seat], dc = k % 6, dr = Math.floor(k / 6);
           var lx = (dc - 2.5) * 0.324, lz = (dr - 2) * 0.428, yaw = g[2];   // five rows of six, centred   // the tile's real footprint, so the discards touch with no spacers
-          m.rotation.order = "YXZ"; m.rotation.set(Math.PI / 2, yaw + Math.PI, 0);   // face up, and turned so the top of each tile points away from the player who threw it: it reads the right way up to them
+          m.rotation.order = "YXZ"; m.rotation.set(-Math.PI / 2, yaw, 0);   // face up (the type side is the top), and turned so the top of each tile points away from the player who threw it: it reads the right way up to them
           m.position.set(g[0] + lx * Math.cos(yaw) + lz * Math.sin(yaw), 0.12, g[1] - lx * Math.sin(yaw) + lz * Math.cos(yaw));
           tableGroup.add(m); GM.discardMeshes.push(m);
           // the most recent discard gets a soft yellow glow under it, so it is easy to spot
@@ -3116,7 +3124,7 @@ Rack: middle</pre>` },
           var tiles = meld.type === 'chi' ? (meld.seq || [meld.t]) : (meld.type === 'kan' || meld.type === 'ankan') ? [meld.t, meld.t, meld.t, meld.t] : [meld.t, meld.t, meld.t];
           tiles.forEach(function (t) {
             var m = gameTile(t);
-            m.rotation.order = "YXZ"; m.rotation.set(Math.PI / 2, yaw, 0);   // flat, type face up, as the discards are
+            m.rotation.order = "YXZ"; m.rotation.set(-Math.PI / 2, yaw + Math.PI, 0);   // flat, type face up, as the discards are
             m.position.set(band[0] + band[2] * along * 0.36, 0.12, band[1] + band[3] * along * 0.36);
             tableGroup.add(m); GM.discardMeshes.push(m);
             along += 1;
@@ -3177,11 +3185,21 @@ Rack: middle</pre>` },
     sortBtn.type = "button"; sortBtn.textContent = "Sort";
     // same look as the Ron button (panelButton), centred at the bottom, on the top layer so it is always visible
     sortBtn.style.cssText = "position:absolute;left:50%;transform:translateX(-50%);bottom:16px;z-index:6000;display:block;margin:0;font:18px MGPixel, monospace;font-weight:bold;background:#c8452f;color:#111;border:0;padding:12px 18px;min-width:120px;cursor:pointer;box-shadow:inset -3px -3px 0 rgba(0,0,0,.35);pointer-events:auto;";
+    function sortStop(e) { e.stopPropagation(); handPress = -1; dragCand = null; downAt = null; hoverD = null; }
+    sortBtn.addEventListener("pointerdown", sortStop);
+    sortBtn.addEventListener("pointerup", sortStop);
     sortBtn.addEventListener("click", function () {
       if (GM.G) { GM.G.hands[0].sort(function (x, y) {
         function group(t) { return t >= 18 && t <= 26 ? 0 : t >= 9 && t <= 17 ? 1 : t <= 8 ? 2 : t <= 30 ? 3 : 4; }   // sticks, coins, man, winds, dragons
         return group(x) - group(y) || x - y;   // like tiles together, ascending within each suit
-      }); gameRender(); }
+      });
+      // the table tiles take the new order too (so the next render does not put the old order back)
+      var left = dealt.filter(function (d) { return d.game && d.edge === "S"; }).sort(function (a, b) { return a.to.x - b.to.x; });
+      GM.G.hands[0].forEach(function (t, i) {
+        var j = left.findIndex(function (d) { return d.tile === t; });
+        if (j >= 0) { left[j].to.x = handX(i, GM.G.hands[0].length); left.splice(j, 1); }
+      });
+      gameRender(); }
     });
     ov.appendChild(sortBtn);   // inside the table overlay, so it shows above the table (the overlay covers the page)
     // chat: a small box in the upper right. Each line is "Name: message" on the left and the time on the right.
