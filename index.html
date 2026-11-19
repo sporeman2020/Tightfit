@@ -2201,16 +2201,154 @@ Rack: middle</pre>` },
     boardText = text; boardEl.textContent = text; boardEl.style.opacity = text ? "1" : "0";
   }
   var kal = { on: false, done: false, t: 0, next: 2, glitches: 0, glitchFrames: 0, camPos: null };
-  function kaleidoStep(dt) {                                                                           // rotate, sink, kaleidoscope; then glitch back a few frames, three times
-    kal.t += dt;
-    var d = Math.min(1, kal.t / 5), rot = kal.t * 480, jx = 0, jy = 0, mir = (Math.floor(kal.t * 8) % 2) ? -1 : 1;
-    if (kal.glitchFrames > 0) { kal.glitchFrames--; jx = (Math.random() - 0.5) * 60; jy = (Math.random() - 0.5) * 20; }
-    wrap.style.transform = "translate(" + jx.toFixed(1) + "px," + (d * 100 + jy).toFixed(1) + "vh) rotate(" + rot.toFixed(1) + "deg) scaleX(" + mir + ") scale(" + (1 + 1.2 * d).toFixed(3) + ")";
-    wrap.style.filter = "hue-rotate(" + (kal.t * 360).toFixed(0) + "deg) saturate(3) contrast(1.8)";
-    if (kal.glitches < 3 && kal.t > kal.next && kal.t > 2) {
-      kal.glitches++; kal.t -= 0.0167 * (2 + Math.floor(Math.random() * 4)); kal.glitchFrames = 3; kal.next = kal.t + 0.9;
+  // entering the core: instead of the page spinning, one small hedron folds inside-out in front of you and a larger one folds all around you; you can look any way you like
+  var Y_AX = new THREE.Vector3(0, 1, 0), look = { yaw: 0, pitch: 0, drag: null };
+  function lookActive() { return !ended && (kal.on || pst.final); }
+  window.addEventListener("pointerdown", function (e) { if (lookActive()) { look.drag = { x: e.clientX, y: e.clientY }; kal.pulse = 1; } });
+  window.addEventListener("pointermove", function (e) {
+    if (!look.drag || !lookActive()) return;
+    look.yaw += (e.clientX - look.drag.x) * 0.006; look.pitch = Math.max(-1.45, Math.min(1.45, look.pitch + (e.clientY - look.drag.y) * 0.006));
+    look.drag.x = e.clientX; look.drag.y = e.clientY;
+  });
+  window.addEventListener("pointerup", function () { look.drag = null; });
+  window.addEventListener("pointercancel", function () { look.drag = null; });
+  function lookFree(target) { cam.lookAt(target); cam.rotateOnWorldAxis(Y_AX, look.yaw); cam.rotateX(look.pitch); }       // aim where the story wants, then add the viewer's own turn on top
+  var mQ = new THREE.Quaternion(), mQt = new THREE.Quaternion(), mP = new THREE.Vector3(), mS = new THREE.Vector3(), mM = new THREE.Matrix4();
+  function makeMini(N, seed) {                                                                           // a shell of the same twisted tower form, laid out on a sphere
+    var im = new THREE.InstancedMesh(slabGeo, slabMat, N), g = new THREE.Group(), dirs = [], qb = [], rr = seed, k, zc, s, ph, d, tn, rl;
+    im.frustumCulled = false; g.add(im);
+    for (k = 0; k < N; k++) {
+      zc = 1 - (k + 0.5) / N * 2; s = Math.sqrt(Math.max(0, 1 - zc * zc)); ph = k * 2.399963; d = new V3(s * Math.cos(ph), s * Math.sin(ph), zc);
+      rr = (rr * 16807) % 2147483647; tn = new V3().crossVectors(d, new V3(Math.sin(rr), Math.cos(rr * 1.7), Math.sin(rr * 2.3))).normalize();
+      rr = (rr * 16807) % 2147483647; rl = rr / 2147483647 * 6.28;
+      dirs.push(d); qb.push(new THREE.Quaternion().setFromUnitVectors(ZAX, tn).multiply(new THREE.Quaternion().setFromAxisAngle(ZAX, rl)));
     }
-    if (kal.t > 8) { kal.done = true; kal.on = false; wrap.style.transform = ""; wrap.style.filter = ""; pst.final = true; lightsOff = true; person.visible = false; setBoard("BOARD: Fear/Allowance/Grip"); }
+    sc2.add(g); return { g: g, im: im, dirs: dirs, qb: qb, N: N };
+  }
+  function miniStep(m, ph, R, size, phase, g, boost, gl, gs, st) {                                       // radius runs +R -> 0 -> -R: it collapses through its centre and comes out inside-out, mirrored
+    var e = Math.cos(ph * 0.8 + phase), ae = Math.abs(e), sg = e < 0 ? -1 : 1, k, d, w, al, h1, h2;
+    for (k = 0; k < m.N; k++) {
+      d = m.dirs[k]; mQt.setFromAxisAngle(Y_AX, (1 - ae) * 3.2 * d.y + ph * 0.15);                         // it twists as it folds
+      al = g ? sg * (d.x * g.x + d.y * g.y + d.z * g.z) : 0;
+      w = g ? 1 + boost * Math.pow(Math.max(0, al), 5) : 1;                                              // the pieces on the side you are looking toward swell, as if they were looking back
+      if (st > 0 && g) { if (al > 0.9) w *= 1 - st; else if (al > 0.7) w *= 1 + 0.8 * st; }              // when it stares: a pupil opens where you are looking, ringed by a thicker iris
+      mP.copy(d).multiplyScalar(R * e).applyQuaternion(mQt); mQ.copy(mQt).multiply(m.qb[k]);
+      if (gl > 0) {                                                                                       // a flinch: a random scatter of pieces jump out of place, change size, and are gone a few frames later
+        h1 = Math.abs(Math.sin(k * 12.9898 + gs * 78.233) * 43758.5453) % 1;
+        if (h1 < 0.5) { h2 = Math.abs(Math.sin(k * 4.1 + gs * 9.7) * 24634.6) % 1; mP.x += (h2 - 0.5) * size * 7 * gl; mP.y += ((h2 * 7.3) % 1 - 0.5) * size * 4 * gl; mP.z += ((h2 * 13.1) % 1 - 0.5) * size * 7 * gl; w *= 0.3 + h1 * 2.4; mQ.multiply(mQt.setFromAxisAngle(ZAX, h2 * 6.28 * gl)); }
+      }
+      mS.set(sg * size * w * (0.35 + 0.65 * ae), size * w, size * w * (0.5 + 0.5 * ae));
+      mM.compose(mP, mQ, mS); m.im.setMatrixAt(k, mM);
+    }
+    m.im.instanceMatrix.needsUpdate = true;
+  }
+  // The finale. If you keep your view fixed on one spot for too long, the pieces around you gather there into an eye, which then builds itself into the
+  // Tightfit lattice (it flattens and turns the lattice's maroon), goes grainy and fainter, blends into the page, and is gone. You are back on Tightfit.
+  var EYE_W = 7.5, EYE_H = 4.0;
+  function eyeTarget(k, N) {                                                                              // slab k's place in the eye: [x, y, tangent x, tangent y] on a flat plane facing you
+    var nL = Math.floor(N * 0.34), nI = Math.floor(N * 0.26), nJ = Math.floor(N * 0.14), i, u, x, y, dydx, th, r, tl;
+    if (k < nL) {                                                                                         // the lids: an upper arc and a flatter lower one
+      i = k % (nL >> 1); u = i / (nL >> 1); x = -EYE_W + 2 * EYE_W * u; var up = k < (nL >> 1), hh = up ? EYE_H : -0.75 * EYE_H;
+      y = hh * (1 - (x / EYE_W) * (x / EYE_W)); dydx = -2 * hh * x / (EYE_W * EYE_W); tl = Math.hypot(1, dydx); return [x, y, 1 / tl, dydx / tl];
+    }
+    k -= nL;
+    if (k < nI) { th = k / nI * Math.PI * 2; return [Math.cos(th) * 2.9, Math.sin(th) * 2.9, -Math.sin(th), Math.cos(th)]; }              // the iris rim
+    k -= nI;
+    if (k < nJ) { th = k / nJ * Math.PI * 2 + 0.2; return [Math.cos(th) * 1.7, Math.sin(th) * 1.7, -Math.sin(th), Math.cos(th)]; }        // an inner ring, round the pupil
+    k -= nJ; th = k * 2.399963; r = 1.9 + 0.9 * ((k * 0.618) % 1); return [Math.cos(th) * r, Math.sin(th) * r, Math.cos(th), Math.sin(th)];       // fibres of the iris, leaving the pupil empty
+  }
+  function startFinale() {
+    var N = kal.around.N, k, M = new THREE.Matrix4(), p0 = new V3(), q0 = new THREE.Quaternion(), s0 = new V3(), ry = kal.around.g.rotation.y;
+    var gz = cam.getWorldDirection(new V3()), R = new V3().crossVectors(gz, Y_AX).normalize(), U = new V3().crossVectors(R, gz).normalize();
+    var C = gz.clone().multiplyScalar(15), qy = new THREE.Quaternion().setFromAxisAngle(Y_AX, -ry), et, tx, ty, tv, tq;
+    var f = kal.fin = { t: 0, sp: [], sq: [], ss: [], tp: [], tq: [], ts: [] };
+    for (k = 0; k < N; k++) {
+      kal.around.im.getMatrixAt(k, M); M.decompose(p0, q0, s0); f.sp.push(p0.clone()); f.sq.push(q0.clone()); f.ss.push(s0.clone());
+      et = eyeTarget(k, N); tv = C.clone().addScaledVector(R, et[0]).addScaledVector(U, et[1]).applyAxisAngle(Y_AX, -ry); f.tp.push(tv);          // into the big shell's own (turning) frame
+      tx = new V3().addScaledVector(R, et[2]).addScaledVector(U, et[3]).normalize();
+      tq = new THREE.Quaternion().setFromUnitVectors(ZAX, tx); tq.premultiply(qy); f.tq.push(tq); f.ts.push(new V3(2.2, 2.2, 2.2));
+    }
+    kal.eyeMat = slabMat.clone(); kal.eyeMat.transparent = true; kal.around.im.material = kal.eyeMat;
+    var lt = (getComputedStyle(document.documentElement).getPropertyValue("--lattice") || "128,0,0").split(",").map(function (x) { return (parseFloat(x) || 0) / 255; });
+    f.maroon = new THREE.Color(lt[0], lt[1], lt[2]); f.c0 = new THREE.Color(0xe4d8cf); f.e0 = new THREE.Color(0x3a1420);
+    hed.visible = false; voidSphere.visible = false; sPrompt.style.display = "none"; wrap.style.transition = "none"; kal.staring = false; kal.st = 0; kal.gl = 0;
+    f.grain = document.createElement("div");                                                              // film grain that lives outside the picture, so it is still there as the picture fades
+    f.grain.style.cssText = "position:fixed;left:0;top:0;width:100%;height:calc(100% - 30px);z-index:3901;pointer-events:none;opacity:0;mix-blend-mode:multiply;background-size:200px 200px;background-image:" + getComputedStyle(noise).backgroundImage + ";";
+    document.body.appendChild(f.grain);
+  }
+  function finaleStep(dt) {
+    var f = kal.fin, t = (f.t += dt), N = kal.around.N, k, s = sm(t / 9), flat = sm((t - 9) / 7), fade = sm((t - 14) / 13);       // forms (9s), builds into the lattice (7s), grains and fades (13s)
+    kal.front.g.scale.setScalar(Math.max(0.0001, 1 - sm(t / 2)));
+    for (k = 0; k < N; k++) {
+      mP.lerpVectors(f.sp[k], f.tp[k], s); mQ.copy(f.sq[k]).slerp(f.tq[k], s); mS.lerpVectors(f.ss[k], f.ts[k], s);
+      mS.y *= 1 - 0.85 * flat; mS.x *= 1 - 0.6 * flat;                                                    // pressed flat like a line drawn on the page
+      mM.compose(mP, mQ, mS); kal.around.im.setMatrixAt(k, mM);
+    }
+    kal.around.im.instanceMatrix.needsUpdate = true;
+    kal.eyeMat.color.copy(f.c0).lerp(f.maroon, flat); kal.eyeMat.emissive.copy(f.e0).lerp(f.maroon, flat * 0.6); kal.eyeMat.opacity = 1 - 0.6 * fade;
+    wrap.style.opacity = (1 - fade).toFixed(3);                                                           // the picture thins away and the real lattice desk underneath shows through
+    f.grain.style.opacity = (0.5 * sm((t - 6) / 8) * (1 - sm((t - 26) / 2))).toFixed(3);
+    f.grain.style.backgroundPosition = ((Math.random() * 200) | 0) + "px " + ((Math.random() * 200) | 0) + "px";
+    if (t > 28) { f.grain.remove(); end(); }                                                              // gone: the windows come back, and you are on Tightfit again
+  }
+  var kQa = new THREE.Quaternion(), kQb = new THREE.Quaternion(), kGw = new THREE.Vector3(), kGc = new THREE.Vector3(), kGf = new THREE.Vector3();
+  function kaleidoStep(dt) {                                                                             // it watches you: it folds when you move, holds still and creeps closer when you stop, follows your view with a lag, copies what you just did (mirrored), flinches and glitches when you look straight at it, and now and then stares back
+    kal.t += dt;
+    if (kal.fin) { finaleStep(dt); return; }
+    if (!kal.front) {
+      var fw = pst.hedWorld.clone().sub(kal.camPos).normalize();
+      kal.front = makeMini(260, 7); kal.around = makeMini(720, 19); kal.around.g.position.copy(kal.camPos);   // a small one ahead of you, and a big one that you are inside
+      kal.lamp = new THREE.PointLight(0xffe2c8, 2.4, 90); kal.lamp.position.copy(kal.camPos); sc2.add(kal.lamp);      // so the undersides are lit too, not only what the sun reaches
+      wrap.style.touchAction = "none";
+      kal.fw = fw; kal.rt = new V3().crossVectors(fw, Y_AX).normalize();
+      kal.act = 0; kal.pulse = 0; kal.ph = 0; kal.still = 0; kal.fy = look.yaw; kal.fp = look.pitch; kal.vy = 0; kal.vp = 0; kal.pyaw = look.yaw; kal.ppit = look.pitch; kal.pptr = null; kal.hist = []; kal.rep = null;
+      kal.ay = look.yaw; kal.ap = look.pitch; kal.hold = 0; kal.gz = 0; kal.gl = 0; kal.gs = 0; kal.rc = 0; kal.st = 0; kal.staring = false; kal.stEnd = 0; kal.nextSt = 5 + Math.random() * 3;
+    }
+    var gi = sm(kal.t / 1.5), step = Math.max(dt, 0.001);
+    if (keysDown.ArrowLeft) look.yaw += dt * 1.6; if (keysDown.ArrowRight) look.yaw -= dt * 1.6;        // arrows turn the view too, but dragging is all that is needed
+    if (keysDown.ArrowUp) look.pitch = Math.min(1.45, look.pitch + dt * 1.2); if (keysDown.ArrowDown) look.pitch = Math.max(-1.45, look.pitch - dt * 1.2);
+    if (Math.hypot(look.yaw - kal.ay, look.pitch - kal.ap) > 0.12) { kal.ay = look.yaw; kal.ap = look.pitch; kal.hold = 0; } else kal.hold += dt;        // how long your view has stayed on one spot
+    if (!kal.fin && ((kal.t > 210 && kal.hold > 14) || kal.t > 270)) startFinale();                      // the whole thing runs 4 to 5 minutes: not before 3.5 minutes, and by 4.5 it comes whether you hold still or not
+    var dy = look.yaw - kal.pyaw, dp = look.pitch - kal.ppit, pm = 0; kal.pyaw = look.yaw; kal.ppit = look.pitch;
+    if (ptr) { if (kal.pptr) pm = Math.hypot(ptr.x - kal.pptr.x, ptr.y - kal.pptr.y); kal.pptr = { x: ptr.x, y: ptr.y }; }
+    kal.act += (Math.min(1, Math.hypot(dy, dp) / step * 0.5 + pm / step * 0.25 + kal.pulse) - kal.act) * Math.min(1, dt * 6);       // how much you are moving right now, eased; a click spikes it
+    kal.pulse = Math.max(0, kal.pulse - dt * 1.5);
+    kal.still = kal.act < 0.06 ? kal.still + dt : 0;
+    if (!kal.rep) { kal.hist.push({ y: look.yaw, p: look.pitch }); if (kal.hist.length > 180) kal.hist.shift(); }                    // remember the last few seconds of how you looked around
+    if (!kal.rep && !kal.staring && kal.still > 1.6 && kal.hist.length > 30) {                           // you have gone still: it takes its turn and copies it
+      var hy0 = 1e9, hy1 = -1e9, hp0 = 1e9, hp1 = -1e9, hq;
+      for (var hi = 0; hi < kal.hist.length; hi++) { hq = kal.hist[hi]; hy0 = Math.min(hy0, hq.y); hy1 = Math.max(hy1, hq.y); hp0 = Math.min(hp0, hq.p); hp1 = Math.max(hp1, hq.p); }
+      if (Math.max(hy1 - hy0, hp1 - hp0) > 0.12) kal.rep = { f: kal.hist.slice(), i: 0 };
+      kal.hist = [];
+    }
+    var ry = 0, rp = 0;
+    if (kal.rep) {
+      if (kal.act > 0.25 || kal.rep.i >= kal.rep.f.length) kal.rep = null;                              // the moment you move again it stops copying and watches
+      else { var rl = kal.rep.f[kal.rep.f.length - 1], rs = kal.rep.f[kal.rep.i++]; ry = -(rs.y - rl.y); rp = rs.p - rl.p; }     // your own path, mirrored left to right
+    }
+    cam.getWorldDirection(kGc); kGf.copy(kal.front.g.position).sub(kal.camPos); kGf.divideScalar(kGf.length() || 1);        // is your view on it right now?
+    var gaze = kGc.dot(kGf);
+    kal.gz = gaze > 0.93 ? kal.gz + dt : Math.max(0, kal.gz - dt * 2);
+    if (!kal.staring && kal.gl <= 0 && ((kal.gz > 0.3 && Math.random() < dt * (1 + Math.min(1, kal.t / 180)) * (0.3 + 0.9 * Math.min(1, kal.gz / 2.5))) || (gaze > 0.8 && kal.act > 0.8 && Math.random() < dt * 2.5))) {
+      kal.gl = 1; kal.rc = 1; kal.ph += (Math.random() < 0.5 ? -1 : 1) * (0.5 + Math.random() * 1.2);      // it flinches: pieces scatter, it lurches back from you, and its fold jumps
+    }
+    kal.gl = Math.max(0, kal.gl - dt * 4); kal.rc *= Math.exp(-5 * dt); if (kal.gl > 0) kal.gs = Math.floor(kal.t * 30);        // the scatter is re-rolled thirty times a second so it stutters
+    if (!kal.staring && kal.t > kal.nextSt && !kal.rep && kal.act < 0.3) { kal.staring = true; kal.stEnd = kal.t + 2.4 + Math.random() * 1.4; kal.gl = 1; kal.rc = -0.5; }       // now and then it stops and stares back
+    if (kal.staring && (kal.t > kal.stEnd || kal.act > 0.75)) { kal.staring = false; kal.nextSt = kal.t + (6 + Math.random() * 5) * (1 - 0.5 * Math.min(1, kal.t / 180)); if (kal.act > 0.75) { kal.gl = 1; kal.rc = 1; } }   // look away fast and it flinches
+    kal.st += ((kal.staring ? 1 : 0) - kal.st) * Math.min(1, dt * (kal.staring ? 8 : 3));
+    var near = Math.max(sm(kal.still / 3), kal.st), lock = kal.st;
+    var tyaw = look.yaw + (ry - (ptr ? ptr.x * 0.3 : 0)) * (1 - lock), tpit = look.pitch + (rp + (ptr ? ptr.y * 0.2 : 0)) * (1 - lock);       // it leans toward where your cursor is, but when it stares it is dead centre
+    kal.vy += (tyaw - kal.fy) * 28 * dt; kal.vy *= Math.exp(-4.5 * dt); kal.fy += kal.vy * dt;           // it follows your view on a spring: it lags, overshoots and settles
+    kal.vp += (tpit - kal.fp) * 28 * dt; kal.vp *= Math.exp(-4.5 * dt); kal.fp += kal.vp * dt;
+    if (kal.staring) kal.ph += (Math.round(kal.ph * 0.8 / Math.PI) * Math.PI / 0.8 - kal.ph) * Math.min(1, dt * 3);       // while it stares it stops folding, fully formed
+    else kal.ph += dt * (0.12 + 1.7 * Math.max(kal.act, kal.rep ? 0.6 : 0));                            // nearly frozen when you are still, folding fast when you move
+    kQa.setFromAxisAngle(kal.rt, kal.fp); kQb.setFromAxisAngle(Y_AX, kal.fy);
+    kGw.copy(kal.fw).applyQuaternion(kQa).applyQuaternion(kQb);
+    kal.front.g.position.copy(kal.camPos).addScaledVector(kGw, 7 - 2.6 * near + 3 * kal.rc);             // it creeps closer the longer you hold still
+    if (kal.gl > 0) kal.front.g.position.add(kGf.set(Math.sin(kal.gs * 1.7), Math.sin(kal.gs * 2.9), Math.sin(kal.gs * 4.3)).multiplyScalar(0.45 * kal.gl));
+    miniStep(kal.front, kal.ph, 2.6 * gi, 1.0, 0, null, 0, kal.gl, kal.gs, 0); kal.front.g.rotation.y = kal.ph * 0.25 * (1 - lock);
+    kGw.copy(kGc).applyAxisAngle(Y_AX, -kal.around.g.rotation.y);
+    miniStep(kal.around, kal.ph, 16 * gi * (1 - 0.22 * near + 0.12 * kal.act), 3.0, 1.9, kGw, 0.7, kal.gl * 0.5, kal.gs + 5, kal.st); kal.around.g.rotation.y = -kal.ph * 0.1;     // the big one closes in while you are still, opens out when you move, and opens a pupil where you look when it stares
   }
   var sPrompt = document.createElement("div");
   sPrompt.style.cssText = "position:absolute;left:50%;bottom:72px;transform:translateX(-50%);width:46px;height:46px;border:2px solid #fff;border-radius:12px;display:none;align-items:center;justify-content:center;font:22px MGPixel, monospace;color:#fff;background:transparent;pointer-events:none;z-index:4;";
@@ -2255,8 +2393,8 @@ Rack: middle</pre>` },
     halo.material.opacity = Math.max(0, Math.min(1, 1 - cam.position.distanceTo(hed.position) / 300));
     var vp = sm((T - 45) / 90);
     if (!pst.final && T > 45) { voidSphere.visible = true; voidSphere.position.copy(hed.position); voidSphere.scale.setScalar(Math.max(0.001, 470 * vp)); setBoard("BOARD: Intrusion/Invasion/Invalid Occupant"); }
-    if (kal.on) { kaleidoStep(dt); cam.position.copy(kal.camPos); cam.lookAt(pst.hedWorld); voidSphere.visible = false; sPrompt.style.display = "none"; return; }
-    if (pst.final) { voidSphere.visible = false; sPrompt.style.display = "none"; if (!tunnelOn) startTunnel(); tunnelStep(T); cam.position.copy(tunnelC); cam.lookAt(tunnelC.x, tunnelC.y, tunnelC.z - 1); return; }
+    if (kal.on) { kaleidoStep(dt); cam.position.copy(kal.camPos); lookFree(pst.hedWorld); voidSphere.visible = false; sPrompt.style.display = "none"; return; }
+    if (pst.final) { voidSphere.visible = false; sPrompt.style.display = "none"; if (!tunnelOn) startTunnel(); tunnelStep(T); cam.position.copy(tunnelC); lookFree(new V3(tunnelC.x, tunnelC.y, tunnelC.z - 1)); return; }
     if (T < 14 || !boardReady) return;   // the figure only starts once the first board message is written
     if (!pst.on) { pst.on = true; person.visible = true; pst.x = 0; pst.y = 0; pst.vy = 0; pst.z = 22; pst.hedWorld.copy(hed.position); }
     var fwd = 0, back = (keysDown.ArrowDown || keysDown.s) ? 1 : 0;   // W is disabled for now
@@ -2318,7 +2456,7 @@ Rack: middle</pre>` },
     }
     function end() {
       if (ended) return; ended = true; cancelAnimationFrame(raf); wrap.style.opacity = 0; showAll();
-      setTimeout(function () { renderer.dispose(); window.removeEventListener("pointermove", onPtr); window.removeEventListener("keydown", onEsc); wrap.remove(); }, 1000);
+      setTimeout(function () { renderer.dispose(); window.removeEventListener("pointermove", onPtr); look.drag = null; window.removeEventListener("keydown", onEsc); wrap.remove(); }, 1000);
     }
     function onEsc(e) { if (e.key === "Escape") { e.preventDefault(); end(); } }      // Esc is the only way out
     window.addEventListener("keydown", onEsc);
