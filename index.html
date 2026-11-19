@@ -2935,7 +2935,6 @@ Rack: middle</pre>` },
       winPanel.appendChild(panelButton("Ron", "#c8452f", function () { actCall(has("ron")[0]); gameAfter(); }, canRon));
       winPanel.appendChild(panelButton("Tsumo", "#f2d200", function () { actTsumo(); gameAfter(); }, canTsumo));
       callPanel.style.display = "grid"; winPanel.style.display = "flex";   // always there, lit only when the move is possible
-      armCallTimer(S, !!callWait);
       // closed kan (four in hand) and added kan (a fourth tile for your own Pon), both on your turn
       var quads = [], adds = [];
       var quiet = [1, 2, 3].every(function (p) { return S.melds[p].length === 0; });   // added kan only while no other player has called
@@ -2946,7 +2945,7 @@ Rack: middle</pre>` },
       }
       quads.forEach(function (qt) { callPanel.appendChild(panelButton("Kan " + tileName(qt), "#3aa846", function () { actKan(qt); gameAfter(); })); });
       adds.forEach(function (qt) { callPanel.appendChild(panelButton("Added Kan " + tileName(qt), "#3aa846", function () { actAddKan(qt); gameAfter(); })); });
-      gameHud.textContent = S.over ? gameResultText(S, names) : (S.phase === "discard" && S.turn === 0 ? "Your turn: click a tile to discard" : (callWait ? "Call available: take it, or let it go (passes by itself in " + (GM.callLeft || CALL_WINDOW) + "s)" : "Waiting for " + names[S.turn]));
+      gameHud.textContent = S.over ? gameResultText(S, names) : (S.phase === "discard" && S.turn === 0 ? "Your turn: click a tile to discard" : (callWait ? "Call available: take it, or let it go" : "Waiting for " + names[S.turn]));
       if (GM.riichiMode && S.phase === "discard" && S.turn === 0) gameHud.textContent = "Riichi: click the tile to discard";
       gameHud.style.pointerEvents = "none";
       showLaggedDiscards(S);
@@ -2965,23 +2964,6 @@ Rack: middle</pre>` },
       b.style.cssText = "display:block;margin:0;font:18px MGPixel, monospace;font-weight:bold;background:" + col + ";color:#111;border:0;padding:12px 18px;min-width:120px;box-shadow:inset -3px -3px 0 rgba(0,0,0,.35);" + (on ? "cursor:pointer;" : "cursor:not-allowed;opacity:.32;filter:grayscale(.75);");
       if (on) b.addEventListener("click", fn);
       return b;
-    }
-    // A call is never forced: leave it alone and it passes by itself after a few seconds.
-    var CALL_WINDOW = 6;
-    function passCall() {
-      var S = GM.G; if (!S || S.phase !== "call") return;
-      if (GM.callTick) { clearInterval(GM.callTick); GM.callTick = null; }
-      actCall(null); gameAfter();
-    }
-    function armCallTimer(S, waiting) {
-      if (!waiting) { if (GM.callTick) { clearInterval(GM.callTick); GM.callTick = null; } GM.callLeft = 0; return; }
-      if (GM.callTick) return;                          // already counting down for this call
-      GM.callLeft = CALL_WINDOW;
-      GM.callTick = setInterval(function () {
-        GM.callLeft--;
-        if (GM.callLeft <= 0) passCall();
-        else gameHud.textContent = "Call available: take it, or let it go (passes by itself in " + GM.callLeft + "s)";
-      }, 1000);
     }
     // Sort button at the bottom middle: orders your hand by tile type, ascending
     var sortBtn = document.createElement("button");
@@ -3305,6 +3287,8 @@ Rack: middle</pre>` },
     }
     function gameDiscard(d) {
       var S = GM.G;
+      // a call is waiting on you: clicking a tile in your hand passes on the call (there is no pass button)
+      if (S && d && d.game && !S.over && S.phase === 'call' && S.queue.length && S.queue[0].player === 0) { actCall(null); gameAfter(); return true; }
       if (!S || !d || !d.game || S.over || S.phase !== "discard" || S.turn !== 0) return false;
       if (GM.riichiMode) {   // riichi: the chosen tile is the discard that declares it, and only if you are waiting after it
         GM.riichiMode = false;
