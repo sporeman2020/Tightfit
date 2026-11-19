@@ -2648,7 +2648,8 @@ Rack: middle</pre>` },
       var topBoard = new THREE.Mesh(new THREE.BoxGeometry(2 * RW, 0.45, 0.22), trim); topBoard.position.set(0, RTOP - 0.22, 0.06); g.add(topBoard);
       return g;
     }
-    // wood roof over the room, planked like the floor but darker and warmer var numberWall = roomSide(-RW, 0, Math.PI / 2); roomSide(RW, 0, -Math.PI / 2);
+    // the two side walls of the room
+    var numberWall = roomSide(-RW, 0, Math.PI / 2); roomSide(RW, 0, -Math.PI / 2);
     // a small label with the number 6241, in the top corner of the left wall (a dark box with a light border)
     (function () {
       var tc = document.createElement("canvas"); tc.width = 256; tc.height = 96;
