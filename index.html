@@ -2421,7 +2421,7 @@ Rack: middle</pre>` },
     spot.target.position.set(0, 0, 0); sc2.add(spot); sc2.add(spot.target);
     var sweep = new THREE.PointLight(0xffffff, 0.25, 20); sc2.add(sweep);
     // fill from the seated side so the upright tile faces (which the overhead spot grazes) read clearly
-    var faceFill = new THREE.DirectionalLight(0xfff4e0, 0.75); faceFill.position.set(0, 3, 12); sc2.add(faceFill); sc2.add(faceFill.target);
+    var faceFill = new THREE.DirectionalLight(0xfff4e0, 0.3); faceFill.position.set(0, 3, 12); sc2.add(faceFill); sc2.add(faceFill.target);
     faceFill.target.position.set(0, 0.5, 0);
     // lattice colour under the glossy green tiles
     var seed = 7; function rnd() { seed = (seed * 16807) % 2147483647; return seed / 2147483647; }
@@ -2482,7 +2482,8 @@ Rack: middle</pre>` },
     var shade = new THREE.Mesh(new THREE.LatheGeometry(shadeProfile, 32), shadeMat); shade.position.set(0, 8.2, 0); sc2.add(shade);
     var chain = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 8, 6), new THREE.MeshStandardMaterial({ color: 0x2a2218, roughness: 0.5 })); chain.position.set(0, 12.2, 0); sc2.add(chain);
     var lampLight = new THREE.PointLight(0x3cc98a, 1.5, 22); lampLight.position.set(0, 7.9, 0); sc2.add(lampLight);    var RW = 15, RFLOOR = -7.5, RTOP = 12, RRAIL = -1.4;
-    var eggshell = new THREE.MeshStandardMaterial({ color: 0x6b1f1f, roughness: 0.62, metalness: 0, side: THREE.DoubleSide });
+    // the room walls: a dark red purple, with a faint glow so they show a little in the dim room
+    var eggshell = new THREE.MeshStandardMaterial({ color: 0x5e1d44, emissive: 0x2a0a1e, emissiveIntensity: 0.8, roughness: 0.62, metalness: 0, side: THREE.DoubleSide });
     var wainscot = new THREE.MeshStandardMaterial({ color: 0x3a2414, roughness: 0.5, metalness: 0, side: THREE.DoubleSide });
     var trim = new THREE.MeshStandardMaterial({ color: 0x2a1809, roughness: 0.45, metalness: 0 });
     // herringbone wood floor: short planks laid at alternating 45-degree angles
@@ -2505,8 +2506,21 @@ Rack: middle</pre>` },
       var base = new THREE.Mesh(new THREE.BoxGeometry(2 * RW, 0.4, 0.12), trim); base.position.set(0, RFLOOR + 0.2, 0.02); g.add(base);
       var frieze = new THREE.Mesh(new THREE.BoxGeometry(2 * RW, 0.7, 0.1), trim); frieze.position.set(0, RTOP - 0.9, 0.02); g.add(frieze);
       var topBoard = new THREE.Mesh(new THREE.BoxGeometry(2 * RW, 0.45, 0.22), trim); topBoard.position.set(0, RTOP - 0.22, 0.06); g.add(topBoard);
+      return g;
     }
-    // wood roof over the room, planked like the floor but darker and warmer roomSide(-RW, 0, Math.PI / 2); roomSide(RW, 0, -Math.PI / 2);    // square walnut legs at the four corners, down from the core
+    // wood roof over the room, planked like the floor but darker and warmer var numberWall = roomSide(-RW, 0, Math.PI / 2); roomSide(RW, 0, -Math.PI / 2);
+    // a small label with the number 6241, in the top corner of the left wall (a dark box with a light border)
+    (function () {
+      var tc = document.createElement("canvas"); tc.width = 256; tc.height = 96;
+      var cx = tc.getContext("2d");
+      cx.fillStyle = "#1a0a10"; cx.fillRect(0, 0, 256, 96);
+      cx.strokeStyle = "#e8d8c0"; cx.lineWidth = 6; cx.strokeRect(6, 6, 244, 84);
+      cx.fillStyle = "#f3e9d6"; cx.font = "bold 56px monospace"; cx.textAlign = "center"; cx.textBaseline = "middle";
+      cx.fillText("6241", 128, 50);
+      var tm = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.56), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(tc), fog: false }));
+      tm.position.set(-RW + 1.6, RTOP - 2.0, 0.06);   // just under the top board, near the corner
+      numberWall.add(tm);
+    })();    // square walnut legs at the four corners, down from the core
     [[-5.4, -3.9], [5.4, -3.9], [5.4, 3.9], [-5.4, 3.9]].forEach(function (c) { var leg = new THREE.Mesh(new THREE.BoxGeometry(0.55, 5.6, 0.55), walnut); leg.position.set(c[0], -4.7, c[1]); sc2.add(leg); });    [[0, -4.31, 0, 0], [0, 4.31, 0, Math.PI], [-5.81, 0, Math.PI / 2, 0], [5.81, 0, -Math.PI / 2, 0]].forEach(function (c) { var pn = new THREE.Mesh(new THREE.PlaneGeometry(c[2] ? 8.6 : 11.6, 1.9), latMat); pn.position.set(c[0], -0.98, c[1]); pn.rotation.y = c[2] ? c[2] : c[3]; sc2.add(pn); });
 
     // the wall pieces use the same tile look: colour on the front two-thirds, white on the back third, a random colour for each piece
@@ -2574,6 +2588,7 @@ Rack: middle</pre>` },
     }    function makePiece() {
       var pi = pieceCounter++; var type = typeDeck[pi % typeDeck.length];   // the wall is built first, so these take the 136 in order
       var g = new THREE.Group(), D = 0.34, d1 = D * 2 / 3, d2 = D / 3;
+      g.userData.type = type;   // the tile's face type (0-33): the one shuffle the game reads back
       // the coloured side keeps the malachite design, cut to this piece's cell
       var fgeo = new THREE.ExtrudeGeometry(pieceRound(0.5, 0.7, 0.06), { depth: d1, bevelEnabled: false, curveSegments: 3 });
       cellUV(fgeo, pi);
@@ -2677,16 +2692,32 @@ Rack: middle</pre>` },
       seq.forEach(function (d, i) { d.order = i; });
     }
     // the west wall (opposite East): seven stacks shift toward the top-left, the third is flipped, the eighth faces long
-    function setupWestWall() {
+    // the dead wall goes on the wall in front of the seat the arrow picked as East, at the top-left end as East sees it
+    function setupEastWall(eastSeat) {
+      var edge = ['S', 'E', 'N', 'W'][eastSeat];
+      var f = { S: [0, 0, -1], E: [-1, 0, 0], N: [0, 0, 1], W: [1, 0, 0] }[edge];   // the direction East faces, into the table
+      var L = [f[2], -f[0]];   // East's left-hand direction, in the table plane (x, z)
+      var stacks = {};
       tableGroup.children.forEach(function (c) {
-        if (c.userData.side !== 'west') return;
-        if (c.userData.idx >= 10) c.position.z += 0.18;   // the last seven stacks move half a tile toward the South wall (the East player's left)
-        if (c.userData.idx === 3) c.rotation.x += Math.PI;   // the middle stack is the dora indicator, flipped face up
-        if (c.userData.idx === 9) c.rotation.y += Math.PI / 2;   // the 8th stack from the South end: its top tile faces long
+        if (c.userData.edge !== edge || c.userData.idx === undefined) return;
+        (stacks[c.userData.idx] = stacks[c.userData.idx] || []).push(c);
       });
+      var order = Object.keys(stacks).map(Number).map(function (i) {
+        var p = stacks[i][0].position;
+        return { idx: i, dot: p.x * L[0] + p.z * L[1] };
+      }).sort(function (a, b) { return b.dot - a.dot; });   // furthest to East's left first
+      order.slice(0, 7).forEach(function (o, k) {
+        stacks[o.idx].forEach(function (c) {
+          c.position.x += 0.18 * L[0]; c.position.z += 0.18 * L[1];   // the dead wall sits half a tile away from the rest
+          if (k === 3 && c.userData.layer === 1) c.rotation.x += Math.PI;   // middle of the seven: the kan dora, top tile flipped face up
+        });
+      });
+      // the 8th stack from that end: only its top tile is turned sideways
+      (stacks[order[7].idx] || []).forEach(function (c) { if (c.userData.layer === 1) c.rotation.y += Math.PI / 2; });
     }
     var pointerLow = false, zoomLerp = 0, pointerHigh = false, topLerp = 0, pointerLeft = false, pointerRight = false;
-    function onMove(e) { pointerLow = e.clientY > window.innerHeight * 0.75; pointerHigh = e.clientY < window.innerHeight * 0.25; pointerLeft = e.clientX < window.innerWidth * 0.15; pointerRight = e.clientX > window.innerWidth * 0.85; }
+    var pointerOn = false, pointerNX = 0, pointerNY = 0, idleLerp = 1;   // pointer on the page: -1 to 1 across and down the screen; idleLerp eases the idle view in
+    function onMove(e) { pointerOn = true; pointerNX = e.clientX / window.innerWidth * 2 - 1; pointerNY = e.clientY / window.innerHeight * 2 - 1; pointerLow = e.clientY > window.innerHeight * 0.75; pointerHigh = e.clientY < window.innerHeight * 0.25; pointerLeft = e.clientX < window.innerWidth * 0.15; pointerRight = e.clientX > window.innerWidth * 0.85; }
     window.addEventListener("mousemove", onMove);
     // ---- the rules engine runs the turns; the table shows its hands and discards ----
     var GM = { G: null, started: false, handMeshes: [], discardMeshes: [] };
@@ -2748,6 +2779,7 @@ Rack: middle</pre>` },
       var hand = S.hands[0], n = hand.length, prev = GM.lastHandLen;
       var flipIdx = (prev !== undefined && n > prev && (n - 2) % 3 === 0) ? n - 1 : -1;   // a draw (the hand grew to 14, 11, 8, 5 or 2): the new tile is the last one, and it flips into place
       GM.lastHandLen = n;
+      if (flipIdx >= 0) playTileClick();   // a drawn tile: the soft click
       handClear();
       hand.forEach(function (t, i) {
         var g = gameTile(t);                             // the same tile the table uses: malachite back, white face with its type
@@ -2801,14 +2833,33 @@ Rack: middle</pre>` },
     }
     function gameTile(t) {
       var g = makePiece();
+      var jadeMat = g.children[0].material;   // the jade stays on the back as the backing
       var bgeo = new THREE.ExtrudeGeometry(pieceRound(0.5, 0.7, 0.06), { depth: 0.34 / 3, bevelEnabled: false, curveSegments: 3 });
-      typeUV(bgeo, t);
-      g.children[1].geometry = bgeo; g.children[1].material = typeMats[t];
+      g.children[1].geometry = bgeo; g.children[1].material = jadeMat;
+      // your hand shows the style sheet on the face you see (the front), not the jade back
+      var fgeo = new THREE.ExtrudeGeometry(pieceRound(0.5, 0.7, 0.06), { depth: 0.34 * 2 / 3, bevelEnabled: false, curveSegments: 3 });
+      typeUV(fgeo, t);
+      g.children[0].geometry = fgeo; g.children[0].material = typeMats[t];
       g.scale.set(0.648, 0.612, 0.612);
       return g;
     }
     // a hand is centred on the table: each tile is one tile-width (0.324) from the next, so they touch
     function handX(i, n) { return (i - (n - 1) / 2) * 0.324; }
+    // bots put their tiles down one at a time, each after a random pause of 0.15 to 0.8 seconds
+    function showLaggedDiscards(S) {
+      if (GM.showTimer) return;
+      var seats = [1, 2, 3].filter(function (s) { return S.discards[s].length > (GM.shown[s] || 0); });
+      if (!seats.length) return;
+      var s = seats[Math.floor(Math.random() * seats.length)];
+      GM.showTimer = setTimeout(function () {
+        GM.showTimer = null;
+        GM.shown[s] = (GM.shown[s] || 0) + 1;
+        playTileClick();   // the bot's tile lands on the grid
+        gameRender();
+      }, 150 + Math.random() * 650);
+    }
+    function actKan(t) { if (NET.role === 'client') { NET.toHost({ t: 'act', k: 'kan', tile: t }); return true; } return MJG.humanKan(GM.G, t, 0); }
+    function actAddKan(t) { if (NET.role === 'client') { NET.toHost({ t: 'act', k: 'addkan', tile: t }); return true; } return MJG.humanAddKan(GM.G, t, 0); }
     function gameRender() {
       var S = GM.G; if (!S) return;
       hoverD = null;
@@ -2816,18 +2867,54 @@ Rack: middle</pre>` },
       GM.discardMeshes.forEach(function (m) { tableGroup.remove(m); }); GM.discardMeshes = [];
       dealt = dealt.filter(function (d) { return !d.game; });
       renderHandBar(S);   // your hand is shown in the UI, not on the table
-      var consumed = 136 - S.wall.length, wallEdge = ["S", "E", "N", "W"];
+      // called sets are drawn on the table (below), not in a corner panel
+      setBotFaces();      // the other players' rows follow their hand sizes
+      refreshSeatNames(); // names above the winds follow who is in each seat
+      var wallEdge = ["S", "E", "N", "W"];
+      var consumed = (GM.liveJx ? GM.liveJx.length : 136) - S.wall.length;   // live-wall tiles drawn so far
       for (var jx = 0; jx < consumed; jx++) {
-        var st2 = findSrc(wallEdge[Math.floor(jx / 34)], Math.floor((jx % 34) / 2), (jx % 34) % 2 === 0 ? 1 : 0);
+        var lj2 = GM.liveJx ? GM.liveJx[jx] : jx;
+        var st2 = findSrc(wallEdge[Math.floor(lj2 / 34)], Math.floor((lj2 % 34) / 2), (lj2 % 34) % 2 === 0 ? 1 : 0);
         if (st2) st2.visible = false;   // this stack has been drawn
+      }
+      // dead-wall stacks disappear as kan replacements are taken from them, first stack first
+      var deadUsed = GM.deadJx && S.dead ? GM.deadJx.length - S.dead.length : 0;
+      for (var dd = 0; dd < deadUsed; dd++) {
+        var dj2 = GM.deadJx[dd];
+        var st3 = findSrc(wallEdge[Math.floor(dj2 / 34)], Math.floor((dj2 % 34) / 2), (dj2 % 34) % 2 === 0 ? 1 : 0);
+        if (st3) st3.visible = false;
       }
       S.discards.forEach(function (pile, seat) {
         pile.forEach(function (t, k) {
+          if (seat !== 0 && k >= (GM.shown && GM.shown[seat] !== undefined ? GM.shown[seat] : 0)) return;   // a bot's tile waits its turn to be put down
           var m = gameTile(t), g = DISC[seat], dc = k % 6, dr = Math.floor(k / 6);
           var lx = (dc - 2.5) * 0.324, lz = (dr - 2) * 0.428, yaw = g[2];   // five rows of six, centred   // the tile's real footprint, so the discards touch with no spacers
           m.rotation.order = "YXZ"; m.rotation.set(Math.PI / 2, yaw + Math.PI, 0);   // face up, and turned so the top of each tile points away from the player who threw it: it reads the right way up to them
           m.position.set(g[0] + lx * Math.cos(yaw) + lz * Math.sin(yaw), 0.12, g[1] - lx * Math.sin(yaw) + lz * Math.cos(yaw));
           tableGroup.add(m); GM.discardMeshes.push(m);
+          // the most recent discard gets a soft yellow glow under it, so it is easy to spot
+          if (S.last && S.last.seat === seat && k === pile.length - 1 && !S.over) {
+            var glow = new THREE.Mesh(new THREE.PlaneGeometry(0.46, 0.56), new THREE.MeshBasicMaterial({ color: 0xffd23a, transparent: true, opacity: 0.75, depthWrite: false }));
+            glow.rotation.order = "YXZ"; glow.rotation.set(-Math.PI / 2, yaw, 0);
+            glow.position.set(m.position.x, 0.03, m.position.z);
+            tableGroup.add(glow); GM.discardMeshes.push(glow);
+          }
+        });
+      });
+      // called sets (Chi, Pon, Kan) lie flat on the table in a band along each player's side, like the discards
+      var MELD_BAND = [[-4.5, 4.1, 1, 0], [4.1, -4.5, 0, 1], [4.5, -4.1, -1, 0], [-4.1, 4.5, 0, -1]];   // start and direction per seat
+      S.melds.forEach(function (melds, seat) {
+        var band = MELD_BAND[seat], along = 0, yaw = DISC[seat][2];
+        melds.forEach(function (meld) {
+          var tiles = meld.type === 'chi' ? (meld.seq || [meld.t]) : (meld.type === 'kan' || meld.type === 'ankan') ? [meld.t, meld.t, meld.t, meld.t] : [meld.t, meld.t, meld.t];
+          tiles.forEach(function (t) {
+            var m = gameTile(t);
+            m.rotation.order = "YXZ"; m.rotation.set(Math.PI / 2, yaw, 0);   // flat, type face up, as the discards are
+            m.position.set(band[0] + band[2] * along * 0.36, 0.12, band[1] + band[3] * along * 0.36);
+            tableGroup.add(m); GM.discardMeshes.push(m);
+            along += 1;
+          });
+          along += 0.5;   // a gap between sets
         });
       });
       var names = ["You", "Right", "Center", "Left"];
@@ -2849,9 +2936,20 @@ Rack: middle</pre>` },
       winPanel.appendChild(panelButton("Tsumo", "#f2d200", function () { actTsumo(); gameAfter(); }, canTsumo));
       callPanel.style.display = "grid"; winPanel.style.display = "flex";   // always there, lit only when the move is possible
       armCallTimer(S, !!callWait);
+      // closed kan (four in hand) and added kan (a fourth tile for your own Pon), both on your turn
+      var quads = [], adds = [];
+      var quiet = [1, 2, 3].every(function (p) { return S.melds[p].length === 0; });   // added kan only while no other player has called
+      if (!S.over && S.phase === "discard" && S.turn === 0) for (var qt = 0; qt < 34; qt++) {
+        var have = S.hands[0].filter(function (x) { return x === qt; }).length;
+        if (have === 4) quads.push(qt);
+        if (quiet && have >= 1 && S.melds[0].some(function (m) { return m.type === 'pon' && m.t === qt; })) adds.push(qt);
+      }
+      quads.forEach(function (qt) { callPanel.appendChild(panelButton("Kan " + tileName(qt), "#3aa846", function () { actKan(qt); gameAfter(); })); });
+      adds.forEach(function (qt) { callPanel.appendChild(panelButton("Added Kan " + tileName(qt), "#3aa846", function () { actAddKan(qt); gameAfter(); })); });
       gameHud.textContent = S.over ? gameResultText(S, names) : (S.phase === "discard" && S.turn === 0 ? "Your turn: click a tile to discard" : (callWait ? "Call available: take it, or let it go (passes by itself in " + (GM.callLeft || CALL_WINDOW) + "s)" : "Waiting for " + names[S.turn]));
       if (GM.riichiMode && S.phase === "discard" && S.turn === 0) gameHud.textContent = "Riichi: click the tile to discard";
       gameHud.style.pointerEvents = "none";
+      showLaggedDiscards(S);
     }
     function gameResultText(S, names) {                // who won, how, and every yakuman the hand held
       var r = S.result; if (!r || r.winner === undefined) return "Hand over";
@@ -2888,20 +2986,91 @@ Rack: middle</pre>` },
     // Sort button at the bottom middle: orders your hand by tile type, ascending
     var sortBtn = document.createElement("button");
     sortBtn.type = "button"; sortBtn.textContent = "Sort";
-    sortBtn.style.cssText = "position:fixed;left:50%;transform:translateX(-50%);bottom:10px;z-index:3000;font:14px MGPixel, monospace;background:#ede1e3;color:#2a0808;border:0;padding:6px 14px;cursor:pointer;";
+    // same look as the Ron button (panelButton), centred at the bottom, on the top layer so it is always visible
+    sortBtn.style.cssText = "position:absolute;left:50%;transform:translateX(-50%);bottom:16px;z-index:6000;display:block;margin:0;font:18px MGPixel, monospace;font-weight:bold;background:#c8452f;color:#111;border:0;padding:12px 18px;min-width:120px;cursor:pointer;box-shadow:inset -3px -3px 0 rgba(0,0,0,.35);pointer-events:auto;";
     sortBtn.addEventListener("click", function () {
       if (GM.G) { GM.G.hands[0].sort(function (x, y) {
         function group(t) { return t >= 18 && t <= 26 ? 0 : t >= 9 && t <= 17 ? 1 : t <= 8 ? 2 : t <= 30 ? 3 : 4; }   // sticks, coins, man, winds, dragons
         return group(x) - group(y) || x - y;   // like tiles together, ascending within each suit
       }); gameRender(); }
     });
-    document.body.appendChild(sortBtn);
+    ov.appendChild(sortBtn);   // inside the table overlay, so it shows above the table (the overlay covers the page)
+    // chat: a small box in the upper right. Each line is "Name: message" on the left and the time on the right.
+    var NAME_DEFAULT = "You";
+    var chatBox = document.createElement("div");
+    chatBox.style.cssText = "position:absolute;top:12px;right:12px;width:270px;z-index:3000;font:12px MGPixel, monospace;background:rgba(40,22,10,.72);color:#f3e9d6;padding:6px;border-radius:4px;";
+    var chatLog = document.createElement("div");
+    chatLog.style.cssText = "max-height:160px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;padding:6px;background:rgba(0,0,0,.28);border-radius:3px;";
+    // the message window only shows lines; the text is typed in the box below it
+    var chatRow = document.createElement("div"); chatRow.style.cssText = "display:flex;gap:4px;align-items:stretch;margin-top:6px;";
+    // the target button: "To all" sends to everyone, "To <name>" whispers to that one player; it cycles through the players
+    var chatTo = document.createElement("button"); chatTo.type = "button"; chatTo.title = "Choose who gets your message";
+    chatTo.style.cssText = "flex:0 0 auto;max-width:96px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:11px MGPixel, monospace;padding:5px 6px;background:rgba(0,0,0,.2);color:#f3e9d6;border:1px solid rgba(255,255,255,.55);border-radius:3px;cursor:pointer;";
+    var chatIn = document.createElement("input"); chatIn.type = "text"; chatIn.maxLength = 120; chatIn.placeholder = "type here";
+    chatIn.style.cssText = "flex:1;min-width:0;font:12px MGPixel, monospace;padding:5px 6px;background:rgba(0,0,0,.2);color:#f3e9d6;border:1px solid rgba(255,255,255,.55);border-radius:3px;outline:none;";
+    chatRow.appendChild(chatTo); chatRow.appendChild(chatIn);
+    chatBox.appendChild(chatLog); chatBox.appendChild(chatRow);
+    var chatTarget = null;   // null = everyone, otherwise { id: seat, name }
+    function chatPeers() {
+      var out = [];
+      if (NET.role === 'host') Object.keys(NET.conns).forEach(function (k) {
+        var c = NET.conns[k]; if (k !== 'host' && c && c.open) out.push({ id: +k, name: NET.names[k] || "Player" });
+      });
+      else if (NET.role === 'client') {
+        out.push({ id: 0, name: "Host" });
+        (NET.lastSlots || []).forEach(function (sl) { if (sl.live && sl.seat !== NET.mySeat) out.push({ id: sl.seat, name: sl.name || "Player" }); });
+      }
+      return out;
+    }
+    function chatCycleTarget() {
+      var peers = chatPeers(), i = -1;
+      if (chatTarget) for (var q = 0; q < peers.length; q++) if (peers[q].id === chatTarget.id) i = q;
+      chatTarget = (i + 1 < peers.length) ? peers[i + 1] : null;   // all, then each player in turn, then all again
+      chatTo.textContent = chatTarget ? "To " + chatTarget.name : "To all";
+    }
+    chatTo.textContent = "To all";
+    chatTo.addEventListener("click", chatCycleTarget);
+    ov.appendChild(chatBox);
+    function chatTime() { var d = new Date(); return ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2); }
+    function chatAdd(name, text, time) {
+      var row = document.createElement("div");
+      row.style.cssText = "display:flex;justify-content:space-between;align-items:flex-start;gap:8px;";
+      var left = document.createElement("span");
+      left.style.cssText = "text-align:left;flex:1;min-width:0;overflow-wrap:anywhere;";
+      var nm = document.createElement("b"); nm.textContent = (name || "Player") + ": "; nm.style.cssText = "color:#f2d200;font-weight:normal;";
+      left.appendChild(nm); left.appendChild(document.createTextNode(text));
+      var right = document.createElement("span");
+      right.style.cssText = "text-align:right;white-space:nowrap;opacity:.7;";
+      right.textContent = time || chatTime();
+      row.appendChild(left); row.appendChild(right);
+      chatLog.appendChild(row); chatLog.scrollTop = chatLog.scrollHeight;
+    }
+    function chatMyName() { return NET.myName || NAME_DEFAULT; }
+    function chatSendText() {
+      var text = chatIn.value.trim(); if (!text) return;
+      chatIn.value = "";
+      var time = chatTime(), me = chatMyName();
+      var shown = chatTarget ? "(to " + chatTarget.name + ") " + text : text;
+      if (NET.role === 'client') {
+        var msg = { t: 'chat', text: text }; if (chatTarget) msg.to = chatTarget.id;
+        NET.toHost(msg); chatAdd(me, shown, time); return;
+      }
+      chatAdd(me, shown, time);
+      if (NET.role === 'host') Object.keys(NET.conns).forEach(function (k) {
+        var c = NET.conns[k]; if (!c || !c.open || k === 'host') return;
+        if (chatTarget && +k !== chatTarget.id) return;   // a whisper goes only to the chosen player
+        c.send({ t: 'chat', name: me, text: text, time: time, whisper: !!chatTarget });
+      });
+    }
+    chatIn.addEventListener("keydown", function (e) { if (e.key === "Enter") chatSendText(); e.stopPropagation(); });   // typing never acts as a game key
     function setBotFaces() {
       var S = GM.G, rowSeat = { E: 1, N: 2, W: 3 };
       dealt.forEach(function (d) {
         if (d.game || rowSeat[d.edge] === undefined) return;
         var hand = S.hands[rowSeat[d.edge]];
-        if (d.ri >= hand.length) { d.discarded = true; d.m.visible = false; return; }
+        // the row shows exactly as many tiles as the seat holds now: draws add a tile back, discards take one away
+        if (d.ri >= hand.length) { d.m.visible = false; return; }
+        d.m.visible = true;
         var t = hand[d.ri], back = d.m.children[1];
         var bgeo = new THREE.ExtrudeGeometry(pieceRound(0.5, 0.7, 0.06), { depth: 0.34 / 3, bevelEnabled: false, curveSegments: 3 });
         typeUV(bgeo, t);
@@ -2938,6 +3107,8 @@ Rack: middle</pre>` },
       else if (msg.k === 'riichi') MJG.humanRiichi(S, msg.tile, m);
       else if (msg.k === 'call') MJG.humanCall(S, msg.opt, m);
       else if (msg.k === 'tsumo') MJG.humanTsumo(S, m);
+      else if (msg.k === 'kan') MJG.humanKan(S, msg.tile, m);
+      else if (msg.k === 'addkan') MJG.humanAddKan(S, msg.tile, m);
     };
     NET.begin = function () {
       NET.lobby = false;
@@ -3009,7 +3180,7 @@ Rack: middle</pre>` },
     }
     NET.setName = function (v) {
       if (NET.role === 'host') { NET.myName = v; netRefresh(true); return; }
-      NET.toHost({ t: 'name', name: v });
+      NET.myName = v; NET.toHost({ t: 'name', name: v });
       if (NET.lastSlots) { NET.lastSlots = NET.lastSlots.map(function (sl) { return sl.seat === NET.mySeat ? Object.assign({}, sl, { name: v }) : sl; }); netLobbyDraw(NET.lastSlots, 'Waiting for the host to start'); }
     };
     function netStatus() { return NET.role === 'host' ? "Starts in " + Math.max(0, Math.ceil((NET.deadline - Date.now()) / 1000)) + "s or when full" : "Waiting for the host to start"; }
@@ -3036,6 +3207,7 @@ Rack: middle</pre>` },
       else if (msg.t === 'begin') NET.begin();
       else if (msg.t === 'view') netApplyView(msg.v);
       else if (msg.t === 'full') netLobbyShow("Room " + NET.room + " is full.");
+      else if (msg.t === 'chat') chatAdd(msg.whisper ? "(whisper) " + msg.name : msg.name, msg.text, msg.time);
     }
     function netAccept(conn) {
       var s = NET.seatFree();
@@ -3051,6 +3223,21 @@ Rack: middle</pre>` },
         if (!msg) return;
         if (msg.t === 'act' && GM.G) { NET.handleAct(s, msg); gameAfter(); }
         else if (msg.t === 'name' && typeof msg.name === 'string') { NET.names[s] = msg.name.trim().slice(0, 16) || NET.names[s]; netRefresh(true); }
+        else if (msg.t === 'chat' && typeof msg.text === 'string') {
+          // a player's line goes to everyone, or only to the player it is whispered to (msg.to), with the host's time stamp
+          var from = NET.names[s] || "Player", text = msg.text.slice(0, 120), time = chatTime();
+          if (msg.to === undefined || msg.to === null) {
+            chatAdd(from, text, time);
+            Object.keys(NET.conns).forEach(function (k) {
+              var c = NET.conns[k]; if (c && c.open && k !== 'host' && +k !== s) c.send({ t: 'chat', name: from, text: text, time: time });
+            });
+          } else if (+msg.to === 0) {
+            chatAdd("(whisper) " + from, text, time);   // whispered to the host
+          } else {
+            var dest = NET.conns[msg.to];
+            if (dest && dest.open && +msg.to !== s) dest.send({ t: 'chat', name: from, text: text, time: time, whisper: true });
+          }
+        }
       });
       conn.on('close', function () { delete NET.seats[s]; delete NET.conns[s]; netRefresh(true); });
       netRefresh(true);
@@ -3087,7 +3274,24 @@ Rack: middle</pre>` },
       if (NET.role === 'client') return;   // a joining player is shown the host's game
       GM.started = true;
       dealt.forEach(function (d) { if (d.edge === "S" && !d.game) d.discarded = true; });   // the dealt hand gives way to the engine's hand
-      GM.G = MJG.newGame({ humans: NET.humanSeats(), dealer: starter });
+      // one shuffle: the engine plays the tiles the table shows, in the same order they are drawn from the wall
+      var wallEdgeOrder = ["S", "E", "N", "W"], wallTypes = [];
+      for (var jx = 0; jx < 136; jx++) {
+        var pc = findSrc(wallEdgeOrder[Math.floor(jx / 34)], Math.floor((jx % 34) / 2), (jx % 34) % 2 === 0 ? 1 : 0);
+        wallTypes.push(pc ? pc.userData.type : 0);
+      }
+      var humanHand = dealt.filter(function (d) { return d.edge === "S" && !d.game && d.src; })
+        .sort(function (a, b) { return a.ri - b.ri; })
+        .map(function (d) { return d.src.userData.type; });
+      // the dead wall: the seven stacks at East's top-left end, first stack first; each stack's top tile, then its bottom
+      var deadJx = [];
+      for (var dk = 0; dk < 7; dk++) deadJx.push(34 * starter + 2 * dk, 34 * starter + 2 * dk + 1);
+      GM.deadJx = deadJx;
+      GM.shown = [0, 0, 0, 0];   // bot tiles shown so far, per seat
+      if (GM.showTimer) { clearTimeout(GM.showTimer); GM.showTimer = null; }
+      GM.liveJx = [];
+      for (var lj = 0; lj < 136; lj++) if (deadJx.indexOf(lj) < 0) GM.liveJx.push(lj);
+      GM.G = MJG.newGame({ humans: NET.humanSeats(), dealer: starter, wallTypes: wallTypes, humanHand: humanHand, deadJx: deadJx });
       setBotFaces();
       gameRender();
       NET.broadcast();
@@ -3108,6 +3312,7 @@ Rack: middle</pre>` },
         else gameRender();
         return true;
       }
+      playTileClick();   // your tile lands on the discard grid
       actDiscard(d.tile);
       GM.playedFirst = true;
       gameAfter();
@@ -3194,10 +3399,36 @@ Rack: middle</pre>` },
         c.style.cssText = "position:absolute;background:#000;color:#fff;font:16px MGPixel, monospace;padding:4px 0;width:150px;text-align:center;border:0;pointer-events:none;white-space:nowrap;transform:translate(-50%,-50%);";
         c.textContent = WINDS[(seat - starter + 4) % 4];
         ov.appendChild(c);
-        censorBoxes.push({ c: c, p: new THREE.Vector3(sp[1], sp[2], sp[3]) });
+        // the player's name sits above the wind, with a green box beside it; it shows only when someone holds that seat
+        var nameEl = document.createElement("div");
+        nameEl.style.cssText = "position:absolute;bottom:100%;left:50%;transform:translateX(-50%);margin-bottom:4px;display:none;align-items:center;gap:6px;white-space:nowrap;background:rgba(0,0,0,.6);color:#fff;padding:2px 6px;font:13px MGPixel, monospace;pointer-events:none;";
+        var greenBox = document.createElement("span"); greenBox.style.cssText = "display:inline-block;width:10px;height:10px;background:#2e9e3e;";
+        var nameTxt = document.createElement("span");
+        nameEl.appendChild(greenBox); nameEl.appendChild(nameTxt);
+        c.appendChild(nameEl);
+        censorBoxes.push({ c: c, p: new THREE.Vector3(sp[1], sp[2], sp[3]), seat: seat, nameEl: nameEl, nameTxt: nameTxt });
       });
     }
     // the visual deal takes each tile from the stack the engine draws it from: the walls in order S, E, N, W
+    // who holds each table seat (0 = you, South): the host's seats directly, or a client's seats turned to its own view
+    function seatNameMap() {
+      var map = {};
+      if (NET.role === 'host') Object.keys(NET.seats).forEach(function (k) { map[+k] = NET.names[k] || "Player"; });
+      else if (NET.role === 'client') {
+        var me = NET.mySeat || 0;
+        (NET.lastSlots || []).forEach(function (sl) { if (sl.live) map[(sl.seat - me + 4) % 4] = sl.name || "Player"; });
+      }
+      return map;
+    }
+    function refreshSeatNames() {
+      var map = seatNameMap();
+      censorBoxes.forEach(function (b) {
+        if (b.seat === undefined || !b.nameEl) return;
+        var nm = map[b.seat];
+        b.nameTxt.textContent = nm || "";
+        b.nameEl.style.display = nm ? "flex" : "none";
+      });
+    }
     function remapDeal(dealer) {
       var jList = [[], [], [], []], j = 0, order = [0, 1, 2, 3].map(function (i) { return (dealer + i) % 4; });
       for (var r = 0; r < 3; r++) order.forEach(function (sp) { for (var q = 0; q < 4; q++) jList[sp].push(j++); });
@@ -3223,7 +3454,7 @@ Rack: middle</pre>` },
         arrowGroup.rotation.y = (thetaT + 12 * Math.PI) * eo;
         if (at >= 1) { arrowDone = true; startLbl.textContent = startNames[starter] + (starter === 0 ? ' are' : ' is') + ' East'; startLbl.style.opacity = '1'; setTimeout(function () { startLbl.style.opacity = '0'; }, 2500); setupWinds(); remapDeal(starter); assignDealOrder(starter); }
       }
-      if (arrowDone && T > 4.5) { if (!westSet && T > 8) { westSet = true; setupWestWall(); } // after the four players' initial tiles are drawn
+      if (arrowDone && T > 4.5) { if (!westSet && T > 8) { westSet = true; setupEastWall(starter); } // after the four players' initial tiles are drawn
       tableGroup.visible = true; }
       if (!GM.started && arrowDone && T > 9) gameStart(starter);
       // dealing: each hand tile leaves its wall and slides into its place, one after another after the lamp
@@ -3235,14 +3466,24 @@ Rack: middle</pre>` },
         if (T >= st && active) d.src.visible = false;   // the wall piece leaves the wall as its tile is dealt
         d.hov = (d.edge === 'S' && d === hoverD) ? Math.min(1, d.hov + 0.2) : Math.max(0, d.hov - 0.2);
         d.m.position.lerpVectors(d.src.position, d.to, p);
-        if (d.game) {   // hand tiles glide to their new slots, and the one you drag tilts a little
+        if (d.game) {   // hand tiles glide to their new slots and stay square in one flat plane (no tilt when dragged)
           if (d.cx === undefined) d.cx = d.to.x;
           d.cx += (d.to.x - d.cx) * 0.22;
           d.m.position.x = d.cx;
-          d.tilt = (d.tilt || 0) + ((d === dragD ? 0.12 : 0) - (d.tilt || 0)) * 0.2;
+          d.tilt = (d.tilt || 0) + ((d === dragD ? 0.12 : 0) - (d.tilt || 0)) * 0.2;   // the tile you drag still tilts a little
           d.m.rotation.z = d.tilt;
+          // stand the hand tiles so their faces look at the player, leaning back a little (about 17 degrees)
+          // so the top and sides stay visible: the top edge tips away from the camera, and the base is kept on the table
+          // the whole row turns to face the camera straight on, then leans back so the tops show a little from above
+          var HAND_LEAN = 0.3, lean = -HAND_LEAN * p;
+          d.m.rotation.order = "YXZ";
+          // every tile in the row faces the same way, square to the player: no turn, so nothing fans out or skews
+          d.m.rotation.y = 0;
+          d.m.rotation.x = lean;
+          d.m.position.y -= 0.2754 * (1 - Math.cos(lean));
+        } else {
+          d.m.position.y += 0.12 * d.hov;                     // the hovered tile lifts a little (not for the hand, which stays on one plane)
         }
-        d.m.position.y += 0.12 * d.hov;                       // the hovered tile lifts a little
         d.m.scale.copy(d.base).multiplyScalar(1 + 0.12 * d.hov);   // and grows slightly
       });
       if (hoverD && hoverD.game && hoverD.edge === 'S') {
@@ -3254,18 +3495,24 @@ Rack: middle</pre>` },
       } else tileLabel.style.display = 'none';
       var swing = ease(T / 4);                                  // rotate into three-point perspective over 4 seconds
       cam2.position.lerpVectors(camStart, camEnd, swing);
-      // pointer near the bottom of the page zooms in on your tiles
-      zoomLerp += ((pointerLow && GM.G && GM.G.turn === 0 && GM.G.phase === 'discard' && !GM.G.over ? 1 : 0) - zoomLerp) * 0.06;   // zooms in toward your tiles on your turn   // the camera only moves in once you have played a card
-      cam2.position.lerp(new THREE.Vector3(0, 3.4, 7.4), zoomLerp * 0.85);
-      // pointer up near the top: the camera rises toward a top-down view over the discards
-      topLerp += ((pointerHigh ? 1 : 0) - topLerp) * 0.06;
-      cam2.position.lerp(new THREE.Vector3(0, 6.2, 4.2), topLerp * 0.7);   // lower and nearer the table than before: a lean over the discards, not a climb
+      // the pointer's height on the page picks the view: low on the screen the camera lowers toward your own seat,
+      // high on the screen it looks straight down over the discards, and in between it stays at the default height
+      var botT = pointerOn ? Math.min(1, Math.max(0, (pointerNY - 0.33) / 0.67)) : 0;
+      var topT = pointerOn ? Math.min(1, Math.max(0, (-pointerNY - 0.33) / 0.67)) : 0;
+      zoomLerp += (botT - zoomLerp) * 0.06;
+      topLerp += (topT - topLerp) * 0.06;
+      // idle (no pointer on the page): a higher view, still looking at the centre of the table
+      idleLerp += ((pointerOn ? 0 : 1) - idleLerp) * 0.03;
+      cam2.position.lerp(new THREE.Vector3(0, 8.5, 5.5), idleLerp * 0.7);
+      cam2.position.lerp(new THREE.Vector3(0, 3.4, 7.4), zoomLerp * 0.85);   // low, close to your seat
+      cam2.position.lerp(new THREE.Vector3(0, 11, 0.01), topLerp);           // straight down (the tiny z keeps the view from flipping)
       // whose turn it is: the camera turns a little toward the left or right player; the opposite player keeps the view centred
       // your turn: look at your own pieces; another player's turn: pan up and look straight at that person
       var seat = GM.G ? ["player", "right", "middle", "left"][GM.G.turn] : "player";   // the camera follows whose turn it is, not a timer
       var tgt = seat === "left" ? [-6.4, 1.6, 0.6] : seat === "right" ? [6.4, 1.6, 0.6] : seat === "middle" ? [0, 1.6, -6.8] : [0, 0.3, 3.2];
       // pointer at the left or right edge: the camera focuses on that player
-      if (pointerLeft) tgt = [-6.4, 1.6, 0.6]; else if (pointerRight) tgt = [6.4, 1.6, 0.6];
+      // idle the view looks at the centre of the table; with the pointer on the page it stays centred too, unless the pointer is at a side edge
+      tgt = !pointerOn ? [0, 0, 0] : pointerLeft ? [-6.4, 1.6, 0.6] : pointerRight ? [6.4, 1.6, 0.6] : [0, 0.3, 0];
       lookV.x += (tgt[0] - lookV.x) * 0.05; lookV.y += (tgt[1] - lookV.y) * 0.05; lookV.z += (tgt[2] - lookV.z) * 0.05;
       if (NET.lobby) { var orb = performance.now() / 1000 * 0.12; cam2.position.set(Math.cos(orb) * 9, 1.6, Math.sin(orb) * 9); cam2.lookAt(0, 1.0, 0); }   // while a room gathers, the camera circles the table at head height
       else cam2.lookAt(lookV);
@@ -3300,6 +3547,7 @@ Rack: middle</pre>` },
     document.body.appendChild(d); open = d; return d;
   }
   function askGame() {
+    if (open && open.classList.contains("mahjong-dialog")) return;   // already asking (a key press and its input event can both see the word)
     var d = note("Mahjong", "Would you like to play a game?", '<button type="button" class="note-ok" data-a="ok">OK</button><button type="button" class="note-ok" data-a="cancel">Cancel</button>');
     d.addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; if (b.getAttribute("data-a") === "ok") askWager(); else closeDlg(); });
   }
@@ -3307,12 +3555,18 @@ Rack: middle</pre>` },
     var d = note("Wager", "Enter a number. 10 or less plays against bots. Over 10 opens a room others can join with that number, for 90 seconds or until it is full.<br><input type=\"number\" min=\"1\" style=\"width:100px;margin-top:8px;font:14px MGPixel, monospace;\">", '<button type="button" class="note-ok" data-a="ok">OK</button><button type="button" class="note-ok" data-a="cancel">Cancel</button>');
     d.addEventListener("click", function (e) { var b = e.target.closest("button"); if (!b) return; if (b.getAttribute("data-a") === "ok") { var n = parseInt(d.querySelector("input").value, 10); closeDlg(); window.mahjongRoom = isNaN(n) ? 0 : n; openMahjongTable(); } else closeDlg(); });
   }
-  window.addEventListener("keydown", function (e) {
+  window.addEventListener("keydown", function (e) {                                              // a physical keyboard, anywhere (text boxes included, as with sunrise)
     if (e.ctrlKey || e.metaKey || e.altKey || !e.key || e.key.length !== 1) return;
-    var tg = e.target; if (tg && (tg.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(tg.tagName))) return;
     buf = (buf + e.key.toLowerCase()).slice(-7);
     if (buf === "mahjong") { buf = ""; askGame(); }
   });
+  // A phone's on-screen keyboard sends no ordinary key presses, so also watch what lands in any text box: if it ends in "mahjong", ask.
+  function mjTyped(e) {
+    var el = e.target, tx = el ? (typeof el.value === "string" ? el.value : (el.isContentEditable ? el.textContent : "")) : "";
+    if (/mahjong\s*$/i.test(tx || "") || /mahjong/i.test(e.data || "")) askGame();
+  }
+  document.addEventListener("input", mjTyped, true);
+  document.addEventListener("compositionend", mjTyped, true);
   window.addEventListener("keydown", function (e) { if (open && e.key === "Escape") closeDlg(); });
 })();
 </script></body>
@@ -3561,6 +3815,35 @@ Rack: middle</pre>` },
   var MJ = root.MJ;
 
   function isH(S, seat) { return S.humans.indexOf(seat) >= 0; }
+  // the table's own shuffle, read back: wallTypes is the wall in draw order (136 face types 0-33), and
+  // hand is seat 0's dealt tiles. Seat 0's deal positions get the hand, the rest of the wall keeps the same tiles.
+  // splits the wall into the live wall and the dead wall (the seven stacks at East's top-left end, in draw order)
+  function splitWall(opts, rand, dealer) {
+    var W = opts.wallTypes ? arrangeWall(opts.wallTypes, opts.humanHand, dealer) : MJ.newWall(rand);
+    var dj = opts.deadJx || [];
+    if (!dj.length) return { live: W.slice(), dead: [] };
+    return {
+      live: W.filter(function (_, j) { return dj.indexOf(j) < 0; }),
+      dead: dj.map(function (j) { return W[j]; })
+    };
+  }
+  function arrangeWall(wallTypes, hand, dealer) {
+    var W = wallTypes.slice();
+    if (!hand || !hand.length) return W;
+    var i0 = (0 - dealer + 4) % 4;                 // seat 0's place in the deal order
+    var P = [];
+    for (var r = 0; r < 3; r++) for (var j = 0; j < 4; j++) P.push(16 * r + 4 * i0 + j);
+    P.push(48 + i0);                               // the 13th tile
+    if (dealer === 0) P.push(52);                  // the dealer's 14th tile is the first draw
+    P = P.slice(0, hand.length);
+    var inP = {}; P.forEach(function (p) { inP[p] = true; });
+    var pool = wallTypes.slice(0, 53), rest = pool.slice();
+    P.forEach(function (p, k) { W[p] = hand[k]; var x = rest.indexOf(hand[k]); if (x >= 0) rest.splice(x, 1); });
+    var q = 0;
+    for (var p2 = 0; p2 < 53; p2++) if (!inP[p2]) W[p2] = rest[q++];
+    return W;
+  }
+
   function newGame(opts) {
     opts = opts || {};
     var rand = opts.rand || Math.random;
@@ -3568,13 +3851,15 @@ Rack: middle</pre>` },
     var dealer = opts.dealer !== undefined ? opts.dealer : Math.floor(rand() * 4);
     var roundWind = Math.floor(rand() * 4);
     var S = {
-      wall: MJ.newWall(rand).reverse(),   // pop() takes the wall in order: each stack's top, then its bottom
+      wall: [],   // filled just below: the live wall, in the order tiles are drawn (each stack's top, then its bottom)
       hands: [[], [], [], []], melds: [[], [], [], []], discards: [[], [], [], []], riichi: [false, false, false, false],
       dealer: dealer, roundWind: roundWind, seatWind: [0, 1, 2, 3].map(function (s) { return 27 + (s - dealer + 4) % 4; }),
       turn: dealer, phase: 'discard', queue: [], over: false, result: null, humans: opts.humans || [opts.human === undefined ? 0 : opts.human], human: (opts.humans || [opts.human === undefined ? 0 : opts.human])[0],
       last: null, canTsumo: false, rand: rand,
       drawn: [0, 0, 0, 0], lastDraw: [null, null, null, null], called: false, rinshanPending: false, renhou: !!opts.renhou   // tenhou/chiihou/renhou need each seat's draw count and whether anyone has called
     };
+    var split = splitWall(opts, rand, dealer);   // the dead wall is kept back for kan replacements, taken in order from its first stack
+    S.wall = split.live.reverse(); S.dead = split.dead;
     // deal 13 each, then the dealer draws the 14th
     var order = [0, 1, 2, 3].map(function (i) { return (dealer + i) % 4; });   // East first, then clockwise
     for (var r = 0; r < 3; r++) order.forEach(function (sp) { for (var j = 0; j < 4; j++) S.hands[sp].push(S.wall.pop()); });   // four at a time, three rounds
@@ -3658,6 +3943,14 @@ Rack: middle</pre>` },
       if (pick) { apply(S, entry.player, pick); return; }
     }
     S.phase = 'discard';
+    if (S.last.added) {   // an added kan nobody won on: its maker draws the dead-wall replacement and goes on with the turn
+      S.phase = 'discard';
+      S.turn = S.last.seat;
+      drawDead(S, S.turn);
+      if (afterReplacement(S, S.turn)) return;
+      advance(S);
+      return;
+    }
     S.turn = (S.last.seat + 1) % 4;
     startTurn(S);
     advance(S);
@@ -3685,8 +3978,8 @@ Rack: middle</pre>` },
       S.melds[p].push({ type: opt.type, t: t });
       S.discards[S.last.seat].pop();                 // the called tile leaves that seat's discard pile
       S.turn = p;
-      if (opt.type === 'kan') {                      // kan draws a replacement tile; winning on it is rinshan kaihou
-        if (draw(S, p) === null) return;
+      if (opt.type === 'kan') {                      // kan draws a replacement tile from the dead wall; winning on it is rinshan kaihou
+        if (drawDead(S, p) === null) return;
         if (MJ.canWin(S.hands[p], S.melds[p].length)) {
           if (isH(S, p)) { S.canTsumo = true; S.rinshanPending = true; }
           else { win(S, p, 'tsumo', null, 'rinshan'); return; }
@@ -3725,6 +4018,50 @@ Rack: middle</pre>` },
     var h = S.hands[seat].slice();
     MJ.removeOne(h, t);
     return waits(h, S.melds[seat]).length > 0;
+  }
+  // after a kan replacement tile: if it completes the hand, that is rinshan kaihou for you, a tsumo for a bot
+  function afterReplacement(S, p) {
+    if (!MJ.canWin(S.hands[p], S.melds[p].length)) return false;
+    if (isH(S, p)) { S.canTsumo = true; S.rinshanPending = true; return false; }
+    win(S, p, 'tsumo', null, 'rinshan');
+    return true;
+  }
+  // a kan replacement comes from the dead wall, starting at its first tile
+  function drawDead(S, seat) {
+    if (!S.dead.length) return draw(S, seat);
+    var t = S.dead.shift();
+    S.hands[seat].push(t);
+    return t;
+  }
+  // a closed kan: all four tiles of one type from your own hand, on your turn; the tiles are shown to everyone
+  function humanKan(S, t, seat) {
+    if (seat === undefined) seat = S.humans[0];
+    if (S.over || S.phase !== 'discard' || S.turn !== seat) return false;
+    if (S.hands[seat].filter(function (x) { return x === t; }).length < 4) return false;
+    for (var i = 0; i < 4; i++) MJ.removeOne(S.hands[seat], t);
+    S.melds[seat].push({ type: 'ankan', t: t });
+    afterReplacement(S, seat);   // the replacement tile (winning on it is rinshan kaihou), then you discard again
+    return true;
+  }
+  // added kan: a fourth tile of a Pon you already have, on your turn. Other players may win on that tile first (chankan).
+  function humanAddKan(S, t, seat) {
+    if (seat === undefined) seat = S.humans[0];
+    if (S.over || S.phase !== 'discard' || S.turn !== seat) return false;
+    var pon = S.melds[seat].filter(function (x) { return x.type === 'pon' && x.t === t; })[0];
+    if (!pon || S.hands[seat].indexOf(t) < 0) return false;
+    // only while no other player has called chi, pon or kan
+    if ([0, 1, 2, 3].some(function (p) { return p !== seat && S.melds[p].length > 0; })) return false;
+    MJ.removeOne(S.hands[seat], t);
+    pon.type = 'kan'; pon.added = true;
+    S.last = { seat: seat, t: t, added: true };
+    S.canTsumo = false;
+    S.queue = [];
+    for (var i = 1; i <= 3; i++) {
+      var p = (seat + i) % 4;
+      if (MJ.canWin(S.hands[p].concat([t]), S.melds[p].length)) S.queue.push({ player: p, opts: [{ type: 'ron' }] });
+    }
+    processQueue(S);
+    return true;
   }
   function humanRiichi(S, t, seat) {
     if (seat === undefined) seat = S.humans[0];
@@ -3768,7 +4105,7 @@ Rack: middle</pre>` },
     }
   }
 
-  root.MJG = { newGame: newGame, humanDiscard: humanDiscard, humanRiichi: humanRiichi, canRiichi: canRiichi, humanCall: humanCall, humanTsumo: humanTsumo, advance: advance };
+  root.MJG = { newGame: newGame, humanDiscard: humanDiscard, humanKan: humanKan, humanAddKan: humanAddKan, humanRiichi: humanRiichi, canRiichi: canRiichi, humanCall: humanCall, humanTsumo: humanTsumo, advance: advance };
 })(typeof window !== 'undefined' ? window : globalThis);
 
 </script>
